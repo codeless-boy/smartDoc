@@ -228,3 +228,47 @@ Main Process 通过 IPC 暴露以下接口，请求-响应模式：
 | 布局骨架 | `Layout`（Sider + Content） |
 | 文件类型图标 | `@ant-design/icons`（FilePdfOutlined、FileExcelOutlined、FileWordOutlined、FileImageOutlined 等） |
 | 操作按钮图标 | `@ant-design/icons`（DeleteOutlined、EditOutlined、FolderOpenOutlined 等） |
+
+---
+
+## 10. 实施拆分
+
+### 第一部分：后台功能 + 简略前端
+
+**目标**：实现全部后台功能，前端仅用原生 HTML/JS/CSS 做极简交互界面，布局不做要求，能验证后台功能即可。
+
+**范围**：
+- Electron 主进程搭建
+- SQLite 数据库初始化（files / tags / file_tags / file_opens 四张表）
+- IPC 通信通道全部实现（file:* / tag:* / search:*）
+- 文件导入（拖拽 + 复制到仓库 + 重复检测）
+- 文件打开（shell.openPath）
+- 标签 CRUD + 文件关联
+- 搜索（文件名 + 标签名 + 备注，debounce）
+- 左侧面板数据源（快捷筛选 / 类型分类 / 标签云 / 常用文档）
+- 简略前端：原生 HTML/CSS/JS 页面，表单 + 按钮 + 列表，能触发所有 IPC 操作
+
+**验收标准**：
+- 能导入文件，数据库记录正确
+- 能创建/删除/编辑标签，能关联文件
+- 能按标签多选筛选文件
+- 能按文件名/标签名搜索
+- 能双击打开文件
+- 左侧快捷筛选、类型分类、常用文档数据正确
+
+### 第二部分：完整前端实现
+
+**目标**：基于本设计文档的技术选型和布局要求，实现完整 UI。
+
+**范围**：
+- React + TypeScript 项目搭建
+- Ant Design 组件库集成（Layout / Tag / Input.Search / Drawer / List / message 等）
+- @ant-design/icons 图标集成
+- 严格按照设计文档第 4 节布局：左标签聚合面板 + 中列表看板 + 右弹出详情 + 顶搜索栏
+- 拖拽导入的视觉反馈（遮罩层）
+- 所有交互细节（单击弹详情 / 双击打开 / Ctrl 多选标签）
+
+**验收标准**：
+- UI 布局与设计文档一致
+- 所有第一部分验证过的后台功能在完整 UI 中正常运行
+- 交互流畅，视觉完整
