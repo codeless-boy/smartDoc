@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'">
+  <title>smartDoc — 后台功能验证</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <!-- 顶部操作栏 -->
+    <header id="header">
+      <h1>smartDoc</h1>
+      <div id="search-bar">
+        <input type="text" id="search-input" placeholder="搜索文件名、标签...">
+      </div>
+      <div id="header-actions">
+        <button id="btn-import">📥 导入文件</button>
+      </div>
+    </header>
+
+    <div id="main-layout">
+      <!-- 左侧面板 -->
+      <aside id="left-panel">
+        <section class="panel-section">
+          <h3>⚡ 快捷筛选</h3>
+          <ul id="quick-filters">
+            <li data-filter="recent">🕐 最近添加</li>
+            <li data-filter="untagged">🏷️ 未打标签</li>
+            <li data-filter="frequent">⭐ 常用文档</li>
+          </ul>
+        </section>
+
+        <section class="panel-section">
+          <h3>📑 文件类型</h3>
+          <ul id="type-filters">
+            <li data-type="pdf">📄 PDF <span class="count">0</span></li>
+            <li data-type="word">📝 Word <span class="count">0</span></li>
+            <li data-type="excel">📊 Excel <span class="count">0</span></li>
+            <li data-type="image">🖼️ 图片 <span class="count">0</span></li>
+            <li data-type="other">📦 其他 <span class="count">0</span></li>
+          </ul>
+        </section>
+
+        <section class="panel-section">
+          <h3>🏷️ 标签</h3>
+          <div id="tag-create">
+            <input type="text" id="new-tag-name" placeholder="新标签名">
+            <input type="color" id="new-tag-color" value="#6366f1" style="width:30px;height:24px;padding:0;border:none;">
+            <button id="btn-create-tag">+</button>
+          </div>
+          <div id="tag-cloud"></div>
+          <div id="selected-tags-bar" style="display:none;">
+            已选标签：<span id="selected-tags-list"></span>
+            <button id="btn-clear-tags">清除</button>
+          </div>
+        </section>
+      </aside>
+
+      <!-- 中间文件列表 -->
+      <main id="file-list-container">
+        <div id="file-list-header">
+          <span id="current-filter-label">📋 全部文件</span>
+          <span id="file-count">0 个文件</span>
+        </div>
+        <div id="file-list"></div>
+      </main>
+
+      <!-- 右侧详情 -->
+      <aside id="detail-panel" style="display:none;">
+        <div id="detail-content">
+          <h3 id="detail-name"></h3>
+          <p id="detail-meta"></p>
+          <div class="detail-section">
+            <label>标签</label>
+            <div id="detail-tags"></div>
+            <button id="btn-detail-add-tag">+ 添加标签</button>
+          </div>
+          <div class="detail-section">
+            <label>备注</label>
+            <textarea id="detail-note" placeholder="添加备注..."></textarea>
+          </div>
+          <div class="detail-section">
+            <label>文件信息</label>
+            <div id="detail-info"></div>
+          </div>
+          <div class="detail-actions">
+            <button id="btn-open-file">打开文件</button>
+            <button id="btn-show-in-dir">定位文件</button>
+            <button id="btn-delete-file" class="danger">删除</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+
+    <div id="drop-overlay" style="display:none;">📥 松开以导入文件</div>
+    <div id="toast" style="display:none;"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
