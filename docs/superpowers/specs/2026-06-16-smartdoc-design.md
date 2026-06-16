@@ -209,5 +209,19 @@ Main Process 通过 IPC 暴露以下接口，请求-响应模式：
 |------|------|
 | Electron | 开发效率高，项目已是 Node.js 环境，UI 表现力强 |
 | React + TypeScript | 类型安全，组件化开发，生态成熟 |
+| Ant Design | 社区成熟的 React 组件库，开箱即用的 Tag、Table、Input.Search、Drawer、Layout、Tooltip 等组件，中文文档完善，与需求高度匹配 |
 | better-sqlite3 | 同步 API 避免并发问题，性能好，无需额外服务进程 |
 | SQLite | 轻量嵌入式，无需安装配置，适合单机桌面应用 |
+
+### Ant Design 组件映射
+
+| UI 模块 | 对应 antd 组件 |
+|---------|---------------|
+| 搜索栏 | `Input.Search` + debounce |
+| 标签云 | `Tag`（多色、可点击、可关闭） |
+| 文件列表 | `List` 或 `Table`（大行距、自定义渲染） |
+| 左侧面板 | `Menu` / 自定义 `Collapse` + `Tag` |
+| 右侧详情 | `Drawer`（从右侧滑出） |
+| 导入反馈 | `message` / `notification` |
+| 进度条 | `Progress` |
+| 布局骨架 | `Layout`（Sider + Content） |
