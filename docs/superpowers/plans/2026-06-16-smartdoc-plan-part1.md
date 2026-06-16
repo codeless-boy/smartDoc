@@ -1,18 +1,19 @@
-# smartDoc 实施计划
+# smartDoc 实施计划 — 第一部分：后台功能 + 简略前端
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 分两部分实现 smartDoc Windows 桌面文档管理软件：第一部分后台功能 + 简略原生前端验证，第二部分 React + Ant Design 完整前端。
+**Goal:** 实现全部后台功能（SQLite、文件仓库、IPC），前端用原生 HTML/CSS/JS 做极简交互界面验证后台功能。
 
-**Architecture:** Electron 主进程负责 SQLite 操作和文件管理，通过 IPC 与渲染进程通信。第一部分渲染进程使用原生 HTML/CSS/JS 做功能验证，第二部分替换为 React + TypeScript + Ant Design 完整 UI。
+**Architecture:** Electron 主进程负责 SQLite 操作和文件管理，通过 IPC 与渲染进程通信。渲染进程使用原生 HTML/CSS/JS，无框架依赖。
 
-**Tech Stack:** Electron, better-sqlite3, Node.js (crypto/uuid/fs/path), Part 2 加 React + TypeScript + Vite + Ant Design + @ant-design/icons
+**Tech Stack:** Electron, better-sqlite3, Node.js (crypto/uuid/fs/path)
+
+**依赖关系:** 本部分独立，不依赖第二部分。完成后进入第二部分（React 前端替换）。
 
 ---
 
 ## 文件结构
 
-### 第一部分（最终状态）
 ```
 smartDoc/
 ├── package.json
@@ -28,40 +29,9 @@ smartDoc/
 │       ├── index.html           # 简略前端页面
 │       ├── style.css            # 基本样式
 │       └── app.js               # 前端逻辑，调用 IPC
-└── repo/                        # 文件仓库目录（用户配置，.gitignore）
+└── repo/                        # 文件仓库目录（运行时创建，.gitignore）
     └── files/                   # 扁平存储 {uuid}.{ext}
 ```
-
-### 第二部分（新增/修改）
-```
-smartDoc/
-├── package.json                 # 新增 React/Vite/AntD 依赖和脚本
-├── src/
-│   ├── main/                    # 保持不变
-│   ├── preload/                 # 可能微调
-│   └── renderer-react/          # 新建 React 项目
-│       ├── index.html
-│       ├── vite.config.ts
-│       ├── tsconfig.json
-│       └── src/
-│           ├── main.tsx
-│           ├── App.tsx
-│           ├── api/
-│           │   └── ipc.ts       # IPC 调用封装（类型安全）
-│           ├── components/
-│           │   ├── TagPanel.tsx       # 左侧标签聚合面板
-│           │   ├── FileList.tsx       # 中间文档主看板
-│           │   ├── FileDetail.tsx     # 右侧详情 Drawer
-│           │   ├── SearchBar.tsx      # 顶部搜索栏
-│           │   ├── ImportZone.tsx     # 拖拽导入区域
-│           │   └── TagChip.tsx        # 标签 Chip 组件
-│           └── types/
-│               └── index.ts    # TypeScript 类型定义
-```
-
----
-
-# 第一部分：后台功能 + 简略前端
 
 ---
 
@@ -250,18 +220,15 @@ function md5File(filePath) {
  * 检查磁盘剩余空间（字节）
  */
 function checkDiskSpace(dirPath) {
-  // 使用 fs.statfs 或简单估算
-  // Windows 上可用简单方式
   try {
     const stats = fs.statfsSync ? fs.statfsSync(dirPath) : null;
     if (stats) return stats.bsize * stats.bavail;
   } catch (_) {}
-  return Infinity; // 无法获取时不阻止
+  return Infinity;
 }
 
 /**
  * 复制文件到仓库
- * @returns {{ storagePath: string, md5: string }}
  */
 function copyToRepo(sourcePath, repoPath) {
   const filesDir = ensureRepoDir(repoPath);
@@ -311,9 +278,9 @@ module.exports = {
 };
 ```
 
-- [ ] **Step 2: 验证 file-repo 模块可独立工作**
+- [ ] **Step 2: 验证 file-repo 模块**
 
-在项目根目录临时创建一个测试脚本（不提交）：
+在项目根目录临时创建测试脚本（不提交）：
 
 ```js
 // test-repo.js
@@ -332,7 +299,6 @@ console.log('File exists:', fs.existsSync(path.join(testRepo, storagePath)));
 deleteFromRepo(storagePath, testRepo);
 console.log('Deleted, exists:', fs.existsSync(path.join(testRepo, storagePath)));
 
-// Cleanup
 fs.unlinkSync(testFile);
 fs.rmdirSync(path.join(testRepo, 'files'));
 fs.rmdirSync(testRepo);
@@ -373,7 +339,6 @@ const {
   copyToRepo,
   deleteFromRepo,
   checkDiskSpace,
-  getFileStats,
 } = require('./file-repo');
 
 let repoPath = null;
@@ -382,9 +347,10 @@ function setRepoPath(p) { repoPath = p; }
 
 function registerAllHandlers() {
   if (!repoPath) throw new Error('repoPath not set. Call setRepoPath() first.');
+
   // ========== 文件操作 ==========
 
-  // file:import — 导入文件
+  // file:import
   ipcMain.handle('file:import', async (_event, filePaths) => {
     const db = getDb();
     const results = [];
@@ -397,7 +363,6 @@ function registerAllHandlers() {
         const ext = path.extname(filePath).toLowerCase();
         const size = stat.size;
 
-        // 超大文件确认 (>500MB) — 第一版简化，直接导入
         // 重复检测
         const existing = db.prepare(
           'SELECT id, storage_path FROM files WHERE name = ? AND size = ?'
@@ -438,7 +403,7 @@ function registerAllHandlers() {
     return results;
   });
 
-  // file:delete — 删除文件
+  // file:delete
   ipcMain.handle('file:delete', async (_event, ids) => {
     const db = getDb();
     const deleteStmt = db.prepare('SELECT storage_path FROM files WHERE id = ?');
@@ -453,7 +418,7 @@ function registerAllHandlers() {
     }
   });
 
-  // file:update — 更新文件信息（备注等）
+  // file:update
   ipcMain.handle('file:update', async (_event, id, fields) => {
     const db = getDb();
     const now = new Date().toISOString();
@@ -466,7 +431,7 @@ function registerAllHandlers() {
     return db.prepare('SELECT * FROM files WHERE id = ?').get(id);
   });
 
-  // file:list — 列出文件（支持筛选条件）
+  // file:list（支持 ext/exts/tagIds/untagged/ids 筛选）
   ipcMain.handle('file:list', async (_event, query = {}) => {
     const db = getDb();
     let sql = 'SELECT * FROM files WHERE 1=1';
@@ -507,7 +472,6 @@ function registerAllHandlers() {
 
     const files = db.prepare(sql).all(...params);
 
-    // 为每个文件附加标签
     const tagStmt = db.prepare(`
       SELECT t.id, t.name, t.color FROM tags t
       JOIN file_tags ft ON t.id = ft.tag_id
@@ -520,7 +484,7 @@ function registerAllHandlers() {
     }));
   });
 
-  // file:open — 使用系统默认程序打开文件
+  // file:open
   ipcMain.handle('file:open', async (_event, id) => {
     const db = getDb();
     const file = db.prepare('SELECT storage_path FROM files WHERE id = ?').get(id);
@@ -532,7 +496,6 @@ function registerAllHandlers() {
       throw new Error('FILE_MISSING');
     }
 
-    // 记录打开
     const openId = crypto.randomUUID();
     const now = new Date().toISOString();
     db.prepare('INSERT INTO file_opens (id, file_id, opened_at) VALUES (?, ?, ?)')
@@ -541,7 +504,7 @@ function registerAllHandlers() {
     return shell.openPath(fullPath);
   });
 
-  // file:showInDir — 在资源管理器中定位文件
+  // file:showInDir
   ipcMain.handle('file:showInDir', async (_event, id) => {
     const db = getDb();
     const file = db.prepare('SELECT storage_path FROM files WHERE id = ?').get(id);
@@ -549,7 +512,7 @@ function registerAllHandlers() {
     shell.showItemInFolder(path.join(repoPath, file.storage_path));
   });
 
-  // 获取文件详情（含标签、打开次数）
+  // file:detail
   ipcMain.handle('file:detail', async (_event, id) => {
     const db = getDb();
     const file = db.prepare('SELECT * FROM files WHERE id = ?').get(id);
@@ -570,20 +533,19 @@ function registerAllHandlers() {
 
   // ========== 标签操作 ==========
 
-  // tag:list — 列出所有标签
+  // tag:list
   ipcMain.handle('tag:list', async () => {
     const db = getDb();
-    const tags = db.prepare(`
+    return db.prepare(`
       SELECT t.*, COUNT(ft.file_id) as file_count
       FROM tags t
       LEFT JOIN file_tags ft ON t.id = ft.tag_id
       GROUP BY t.id
       ORDER BY t.name
     `).all();
-    return tags;
   });
 
-  // tag:create — 创建标签
+  // tag:create
   ipcMain.handle('tag:create', async (_event, name, color) => {
     const db = getDb();
     const id = crypto.randomUUID();
@@ -600,13 +562,13 @@ function registerAllHandlers() {
     }
   });
 
-  // tag:delete — 删除标签
+  // tag:delete
   ipcMain.handle('tag:delete', async (_event, id) => {
     const db = getDb();
     db.prepare('DELETE FROM tags WHERE id = ?').run(id);
   });
 
-  // tag:update — 更新标签
+  // tag:update
   ipcMain.handle('tag:update', async (_event, id, fields) => {
     const db = getDb();
     if (fields.name !== undefined) {
@@ -618,7 +580,7 @@ function registerAllHandlers() {
     return db.prepare('SELECT * FROM tags WHERE id = ?').get(id);
   });
 
-  // tag:setOnFile — 设置文件的标签
+  // tag:setOnFile
   ipcMain.handle('tag:setOnFile', async (_event, fileId, tagIds) => {
     const db = getDb();
     const transaction = db.transaction(() => {
@@ -633,7 +595,7 @@ function registerAllHandlers() {
 
   // ========== 搜索 ==========
 
-  // search:files — 搜索文件
+  // search:files
   ipcMain.handle('search:files', async (_event, keyword, filters = {}) => {
     const db = getDb();
     if (!keyword || !keyword.trim()) {
@@ -667,7 +629,7 @@ function registerAllHandlers() {
     return files.map(attachTags);
   });
 
-  // search:suggest — 搜索建议
+  // search:suggest
   ipcMain.handle('search:suggest', async (_event, prefix) => {
     const db = getDb();
     const p = `%${prefix}%`;
@@ -682,7 +644,7 @@ function registerAllHandlers() {
 
   // ========== 左侧面板数据 ==========
 
-  // panel:recent — 最近添加
+  // panel:recent
   ipcMain.handle('panel:recent', async (_event, limit = 50) => {
     const db = getDb();
     const files = db.prepare(
@@ -691,7 +653,7 @@ function registerAllHandlers() {
     return { files: files.map(attachTags), total: files.length };
   });
 
-  // panel:untagged — 未打标签
+  // panel:untagged
   ipcMain.handle('panel:untagged', async () => {
     const db = getDb();
     const files = db.prepare(`
@@ -702,7 +664,7 @@ function registerAllHandlers() {
     return { files: files.map(attachTags), total: files.length };
   });
 
-  // panel:frequent — 常用文档（按打开次数倒序，前20）
+  // panel:frequent
   ipcMain.handle('panel:frequent', async () => {
     const db = getDb();
     const files = db.prepare(`
@@ -716,15 +678,14 @@ function registerAllHandlers() {
     return { files: files.map(f => ({ ...attachTags(f), openCount: f.open_count })), total: files.length };
   });
 
-  // panel:typeCounts — 文件类型计数
+  // panel:typeCounts
   ipcMain.handle('panel:typeCounts', async () => {
     const db = getDb();
     const raw = db.prepare(
       'SELECT ext, COUNT(*) as count FROM files GROUP BY ext ORDER BY count DESC'
     ).all();
 
-    // 归类到五大类别
-    const categories = { 'pdf': 0, 'word': 0, 'excel': 0, 'image': 0, 'other': 0 };
+    const categories = { pdf: 0, word: 0, excel: 0, image: 0, other: 0 };
     const wordExts = ['.doc', '.docx', '.docm', '.dotx', '.odt', '.rtf'];
     const excelExts = ['.xls', '.xlsx', '.xlsm', '.csv', '.xltx', '.ods'];
     const imageExts = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.ico', '.tiff', '.tif'];
@@ -740,7 +701,7 @@ function registerAllHandlers() {
     return categories;
   });
 
-  // panel:tagsWithCount — 标签及文件数
+  // panel:tagsWithCount
   ipcMain.handle('panel:tagsWithCount', async () => {
     const db = getDb();
     return db.prepare(`
@@ -752,14 +713,7 @@ function registerAllHandlers() {
     `).all();
   });
 
-  // 发送事件（导入进度等）
-  ipcMain.handle('file:importWithProgress', async (event, filePaths) => {
-    // 复用 file:import 逻辑，通过 event.sender.send 通知进度
-    // 第一版简化，直接调用 file:import handler
-    return ipcMain.emit('file:import', event, filePaths);
-  });
-
-  // 打开文件选择对话框
+  // dialog:openFiles
   ipcMain.handle('dialog:openFiles', async () => {
     const result = await dialog.showOpenDialog({
       properties: ['openFile', 'multiSelections'],
@@ -769,7 +723,6 @@ function registerAllHandlers() {
   });
 }
 
-// 辅助：为文件附加标签
 function attachTags(file) {
   const db = getDb();
   const tags = db.prepare(`
@@ -822,7 +775,6 @@ function createWindow() {
 
   mainWindow.loadFile(path.join(__dirname, '..', 'renderer', 'index.html'));
 
-  // 开发时打开 DevTools
   if (process.argv.includes('--dev')) {
     mainWindow.webContents.openDevTools();
   }
@@ -838,7 +790,7 @@ app.whenReady().then(() => {
   const repoPath = path.join(app.getPath('documents'), 'smartDoc-repo');
   ensureRepoDir(repoPath);
 
-  // 注册 IPC 处理器（传入 repo 路径）
+  // 注册 IPC 处理器
   setRepoPath(repoPath);
   registerAllHandlers();
 
@@ -952,7 +904,6 @@ git commit -m "feat: add preload script with contextBridge API"
     <div id="main-layout">
       <!-- 左侧面板 -->
       <aside id="left-panel">
-        <!-- 快捷筛选 -->
         <section class="panel-section">
           <h3>⚡ 快捷筛选</h3>
           <ul id="quick-filters">
@@ -962,7 +913,6 @@ git commit -m "feat: add preload script with contextBridge API"
           </ul>
         </section>
 
-        <!-- 文件类型 -->
         <section class="panel-section">
           <h3>📑 文件类型</h3>
           <ul id="type-filters">
@@ -974,7 +924,6 @@ git commit -m "feat: add preload script with contextBridge API"
           </ul>
         </section>
 
-        <!-- 标签管理 -->
         <section class="panel-section">
           <h3>🏷️ 标签</h3>
           <div id="tag-create">
@@ -999,7 +948,7 @@ git commit -m "feat: add preload script with contextBridge API"
         <div id="file-list"></div>
       </main>
 
-      <!-- 右侧详情（单击文件后显示） -->
+      <!-- 右侧详情 -->
       <aside id="detail-panel" style="display:none;">
         <div id="detail-content">
           <h3 id="detail-name"></h3>
@@ -1007,7 +956,6 @@ git commit -m "feat: add preload script with contextBridge API"
           <div class="detail-section">
             <label>标签</label>
             <div id="detail-tags"></div>
-            <select id="detail-add-tag-select" style="display:none;"></select>
             <button id="btn-detail-add-tag">+ 添加标签</button>
           </div>
           <div class="detail-section">
@@ -1027,10 +975,7 @@ git commit -m "feat: add preload script with contextBridge API"
       </aside>
     </div>
 
-    <!-- 拖拽遮罩 -->
     <div id="drop-overlay" style="display:none;">📥 松开以导入文件</div>
-
-    <!-- Toast 消息 -->
     <div id="toast" style="display:none;"></div>
   </div>
 
@@ -1061,7 +1006,6 @@ git commit -m "feat: add minimal frontend HTML structure"
 body { font-family: "Microsoft YaHei", sans-serif; font-size: 13px; background: #f5f5f5; color: #333; }
 #app { display: flex; flex-direction: column; height: 100vh; }
 
-/* 顶部栏 */
 #header {
   display: flex; align-items: center; padding: 8px 16px;
   background: #fff; border-bottom: 1px solid #e0e0e0; gap: 12px;
@@ -1071,12 +1015,9 @@ body { font-family: "Microsoft YaHei", sans-serif; font-size: 13px; background: 
 #search-bar input { width: 100%; padding: 6px 12px; border: 1px solid #d0d0d0; border-radius: 6px; font-size: 13px; }
 button { padding: 5px 12px; border: 1px solid #d0d0d0; border-radius: 4px; background: #fff; cursor: pointer; font-size: 12px; }
 button:hover { background: #f0f0f0; }
-button.primary { background: #6366f1; color: #fff; border-color: #6366f1; }
 
-/* 主布局 */
 #main-layout { display: flex; flex: 1; overflow: hidden; }
 
-/* 左侧面板 */
 #left-panel {
   width: 220px; background: #fff; border-right: 1px solid #e0e0e0;
   overflow-y: auto; padding: 8px 0; flex-shrink: 0;
@@ -1085,7 +1026,8 @@ button.primary { background: #6366f1; color: #fff; border-color: #6366f1; }
 .panel-section h3 { font-size: 11px; color: #999; text-transform: uppercase; margin-bottom: 4px; }
 .panel-section ul { list-style: none; }
 .panel-section li {
-  padding: 4px 8px; cursor: pointer; border-radius: 4px; display: flex; justify-content: space-between; font-size: 12px;
+  padding: 4px 8px; cursor: pointer; border-radius: 4px; display: flex;
+  justify-content: space-between; font-size: 12px;
 }
 .panel-section li:hover { background: #f5f0ff; }
 .panel-section li.active { background: #ede9fe; color: #6366f1; font-weight: 600; }
@@ -1100,7 +1042,6 @@ button.primary { background: #6366f1; color: #fff; border-color: #6366f1; }
 .tag-chip.selected { border-width: 2px; font-weight: 600; }
 #selected-tags-bar { margin-top: 8px; padding: 6px; background: #f5f5f5; border-radius: 4px; font-size: 11px; }
 
-/* 中间文件列表 */
 #file-list-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
 #file-list-header {
   display: flex; justify-content: space-between; align-items: center;
@@ -1114,14 +1055,12 @@ button.primary { background: #6366f1; color: #fff; border-color: #6366f1; }
 .file-row:nth-child(even) { background: #fafafa; }
 .file-row:hover { background: #f0eaff; }
 .file-row.selected { background: #ede9fe; }
-.file-row.missing { opacity: 0.5; }
 .file-icon { font-size: 24px; width: 32px; text-align: center; flex-shrink: 0; }
 .file-info { flex: 1; min-width: 0; }
 .file-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .file-meta { font-size: 11px; color: #999; margin-top: 1px; }
 .file-tags { display: flex; gap: 3px; flex-wrap: wrap; max-width: 180px; justify-content: flex-end; }
 
-/* 右侧详情 */
 #detail-panel {
   width: 240px; background: #fff; border-left: 1px solid #e0e0e0;
   padding: 16px; overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column;
@@ -1137,15 +1076,12 @@ button.primary { background: #6366f1; color: #fff; border-color: #6366f1; }
 .detail-actions button.danger:hover { background: #fee2e2; }
 #detail-info { font-size: 11px; color: #999; line-height: 1.6; }
 
-/* 拖拽遮罩 */
 #drop-overlay {
   position: fixed; top: 0; left: 0; right: 0; bottom: 0;
   background: rgba(99, 102, 241, 0.15); display: flex;
   align-items: center; justify-content: center;
   font-size: 32px; color: #6366f1; z-index: 999; pointer-events: none;
 }
-
-/* Toast */
 #toast {
   position: fixed; bottom: 24px; right: 24px; padding: 10px 20px;
   background: #333; color: #fff; border-radius: 8px; font-size: 13px; z-index: 1000;
@@ -1174,8 +1110,8 @@ git commit -m "feat: add minimal frontend styles"
 const state = {
   currentFiles: [],
   selectedFileId: null,
-  selectedTagIds: [], // Ctrl+多选的标签
-  currentFilter: null, // 'recent' | 'untagged' | 'frequent' | null
+  selectedTagIds: [],
+  currentFilter: null,
   allTags: [],
 };
 
@@ -1224,7 +1160,6 @@ async function doSearch() {
 
 // ========== 文件操作 ==========
 async function loadAllFiles(query = {}) {
-  // 如果有选中的标签，附加标签筛选
   if (state.selectedTagIds.length > 0) {
     query.tagIds = state.selectedTagIds;
   }
@@ -1278,12 +1213,10 @@ async function showFileDetail(id) {
   $('#detail-meta').textContent = `${detail.ext} · ${formatSize(detail.size)} · 打开 ${detail.openCount} 次`;
   $('#detail-note').value = detail.note || '';
 
-  // 标签
   $('#detail-tags').innerHTML = detail.tags.map(t =>
     `<span class="tag-chip" style="background:${t.color}20;color:${t.color};border-color:${t.color}" onclick="removeTagFromFile('${detail.id}','${t.id}')">${t.name} ✕</span>`
   ).join('');
 
-  // 文件信息
   $('#detail-info').innerHTML = `
     导入：${formatDate(detail.imported_at)}<br>
     路径：${detail.storage_path}<br>
@@ -1326,12 +1259,10 @@ function renderTagCloud() {
 
 function toggleTagFilter(tagId, event) {
   if (event.ctrlKey) {
-    // Ctrl+点击：多选模式
     const idx = state.selectedTagIds.indexOf(tagId);
     if (idx >= 0) state.selectedTagIds.splice(idx, 1);
     else state.selectedTagIds.push(tagId);
   } else {
-    // 普通点击：单选模式
     if (state.selectedTagIds.length === 1 && state.selectedTagIds[0] === tagId) {
       state.selectedTagIds = [];
     } else {
@@ -1414,7 +1345,6 @@ $('#quick-filters').addEventListener('click', async (e) => {
   renderFileList();
   updateFilterLabel(li.textContent.trim());
 
-  // 高亮当前
   $$('#quick-filters li').forEach(l => l.classList.remove('active'));
   li.classList.add('active');
   $$('#type-filters li').forEach(l => l.classList.remove('active'));
@@ -1427,21 +1357,17 @@ $('#type-filters').addEventListener('click', async (e) => {
   state.currentFilter = 'type:' + li.dataset.type;
 
   const typeMap = {
-    pdf: '.pdf',
+    pdf: ['.pdf'],
     word: ['.doc', '.docx', '.docm', '.dotx', '.odt', '.rtf'],
     excel: ['.xls', '.xlsx', '.xlsm', '.csv', '.xltx', '.ods'],
     image: ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.ico', '.tiff', '.tif'],
   };
 
   const exts = typeMap[li.dataset.type];
-  if (!exts) { loadAllFiles(); return; }
-
-  if (Array.isArray(exts)) {
-    // 多扩展名类型
-    const results = await Promise.all(exts.map(ext => window.api.file.list({ ext })));
-    state.currentFiles = results.flat();
+  if (exts) {
+    state.currentFiles = await window.api.file.list({ exts });
   } else {
-    state.currentFiles = await window.api.file.list({ ext: exts });
+    state.currentFiles = await window.api.file.list({});
   }
 
   renderFileList();
@@ -1639,7 +1565,7 @@ git add -A && git commit -m "feat: complete Part 1 — backend + minimal fronten
 
 ---
 
-**第一部分完成。验收检查清单：**
+## 第一部分验收检查清单
 
 - [ ] 导入文件 → 数据库记录正确，仓库文件存在
 - [ ] 创建/删除/编辑标签 → 正常
@@ -1651,1290 +1577,3 @@ git add -A && git commit -m "feat: complete Part 1 — backend + minimal fronten
 - [ ] 双击打开文件 → 调用系统程序，打开记录写入 DB
 - [ ] 拖拽导入 → 正常
 - [ ] 备注编辑 → 自动保存
-
----
-
-# 第二部分：React + Ant Design 完整前端
-
----
-
-### Task 11: React 项目搭建
-
-**Files:**
-- Modify: `package.json`
-- Create: `src/renderer-react/index.html`, `src/renderer-react/vite.config.ts`, `src/renderer-react/tsconfig.json`, `src/renderer-react/tsconfig.node.json`
-
-- [ ] **Step 1: 更新 package.json 添加 React 依赖**
-
-将 `package.json` 更新为以下内容（新增 devDependencies 中的 Vite/React/TypeScript 相关，dependencies 中新增 antd/icons）：
-
-```json
-{
-  "name": "smartDoc",
-  "version": "1.0.0",
-  "description": "Windows 桌面文档管理软件",
-  "main": "src/main/main.js",
-  "scripts": {
-    "start": "electron .",
-    "dev": "concurrently \"cd src/renderer-react && npx vite --port 5173\" \"wait-on http://localhost:5173 && electron . --dev\"",
-    "build": "cd src/renderer-react && npx vite build",
-    "postinstall": "electron-rebuild -f -w better-sqlite3"
-  },
-  "private": true,
-  "devDependencies": {
-    "@electron/rebuild": "^3.6.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "@vitejs/plugin-react": "^4.3.0",
-    "concurrently": "^9.0.0",
-    "electron": "^33.0.0",
-    "typescript": "^5.6.0",
-    "vite": "^6.0.0",
-    "wait-on": "^8.0.0"
-  },
-  "dependencies": {
-    "@ant-design/icons": "^5.5.0",
-    "antd": "^5.22.0",
-    "better-sqlite3": "^11.0.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
-  }
-}
-```
-
-- [ ] **Step 2: 安装新依赖**
-
-```bash
-cd E:\code\smartDoc && npm install
-```
-
-- [ ] **Step 3: 创建 index.html**
-
-```html
-<!-- src/renderer-react/index.html -->
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>smartDoc</title>
-</head>
-<body>
-  <div id="root"></div>
-  <script type="module" src="/src/main.tsx"></script>
-</body>
-</html>
-```
-
-- [ ] **Step 4: 创建 vite.config.ts**
-
-```ts
-// src/renderer-react/vite.config.ts
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
-import path from 'path';
-
-export default defineConfig({
-  plugins: [react()],
-  base: './',
-  build: {
-    outDir: 'dist',
-    emptyOutDir: true,
-  },
-  resolve: {
-    alias: {
-      '@': path.resolve(__dirname, 'src'),
-    },
-  },
-});
-```
-
-- [ ] **Step 5: 创建 tsconfig.json**
-
-```json
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "useDefineForClassFields": true,
-    "lib": ["ES2020", "DOM", "DOM.Iterable"],
-    "module": "ESNext",
-    "skipLibCheck": true,
-    "moduleResolution": "bundler",
-    "allowImportingTsExtensions": true,
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "noEmit": true,
-    "jsx": "react-jsx",
-    "strict": true,
-    "noUnusedLocals": false,
-    "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true,
-    "forceConsistentCasingInFileNames": true,
-    "paths": {
-      "@/*": ["./src/*"]
-    }
-  },
-  "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
-}
-```
-
-- [ ] **Step 6: 创建 tsconfig.node.json**
-
-```json
-{
-  "compilerOptions": {
-    "composite": true,
-    "skipLibCheck": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "allowSyntheticDefaultImports": true
-  },
-  "include": ["vite.config.ts"]
-}
-```
-
-- [ ] **Step 7: Commit**
-
-```bash
-git add package.json package-lock.json src/renderer-react/
-git commit -m "chore: scaffold React + Vite + TypeScript + Ant Design project"
-```
-
----
-
-### Task 12: TypeScript 类型定义
-
-**Files:**
-- Create: `src/renderer-react/src/types/index.ts`
-
-- [ ] **Step 1: 定义类型**
-
-```ts
-// src/renderer-react/src/types/index.ts
-
-export interface FileInfo {
-  id: string;
-  name: string;
-  ext: string;
-  size: number;
-  storage_path: string;
-  note: string;
-  imported_at: string;
-  updated_at: string;
-  tags: TagInfo[];
-  openCount?: number;
-}
-
-export interface TagInfo {
-  id: string;
-  name: string;
-  color: string;
-  created_at?: string;
-  file_count?: number;
-}
-
-export interface FileDetail extends FileInfo {
-  openCount: number;
-}
-
-export interface ImportResult {
-  path: string;
-  status: 'imported' | 'duplicate' | 'error';
-  id?: string;
-  name?: string;
-  size?: number;
-  ext?: string;
-  existingId?: string;
-  error?: string;
-}
-
-export interface TypeCounts {
-  pdf: number;
-  word: number;
-  excel: number;
-  image: number;
-  other: number;
-}
-
-export interface PanelResult {
-  files: FileInfo[];
-  total: number;
-}
-
-export interface SearchSuggestion {
-  type: 'file' | 'tag';
-  text: string;
-}
-
-export interface FileListQuery {
-  ext?: string;
-  exts?: string[];
-  tagIds?: string[];
-  untagged?: boolean;
-  ids?: string[];
-  sortBy?: string;
-  sortOrder?: 'ASC' | 'DESC';
-  limit?: number;
-}
-
-// Window API 类型声明
-declare global {
-  interface Window {
-    api: {
-      file: {
-        import: (paths: string[]) => Promise<ImportResult[]>;
-        delete: (ids: string[]) => Promise<void>;
-        update: (id: string, fields: { note?: string }) => Promise<FileInfo>;
-        list: (query?: FileListQuery) => Promise<FileInfo[]>;
-        open: (id: string) => Promise<void>;
-        showInDir: (id: string) => Promise<void>;
-        detail: (id: string) => Promise<FileDetail>;
-      };
-      tag: {
-        list: () => Promise<TagInfo[]>;
-        create: (name: string, color?: string) => Promise<TagInfo>;
-        delete: (id: string) => Promise<void>;
-        update: (id: string, fields: { name?: string; color?: string }) => Promise<TagInfo>;
-        setOnFile: (fileId: string, tagIds: string[]) => Promise<void>;
-      };
-      search: {
-        files: (keyword: string, filters?: Record<string, unknown>) => Promise<FileInfo[]>;
-        suggest: (prefix: string) => Promise<SearchSuggestion[]>;
-      };
-      panel: {
-        recent: (limit?: number) => Promise<PanelResult>;
-        untagged: () => Promise<PanelResult>;
-        frequent: () => Promise<PanelResult>;
-        typeCounts: () => Promise<TypeCounts>;
-        tagsWithCount: () => Promise<TagInfo[]>;
-      };
-      dialog: {
-        openFiles: () => Promise<string[]>;
-      };
-    };
-  }
-}
-
-export {};
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/renderer-react/src/types/index.ts
-git commit -m "feat: add TypeScript type definitions and window.api declaration"
-```
-
----
-
-### Task 13: IPC 调用封装与 App 入口
-
-**Files:**
-- Create: `src/renderer-react/src/api/ipc.ts`
-- Create: `src/renderer-react/src/main.tsx`
-- Create: `src/renderer-react/src/App.tsx`
-
-- [ ] **Step 1: API 封装**
-
-```ts
-// src/renderer-react/src/api/ipc.ts
-import type { FileInfo, FileDetail, TagInfo, ImportResult, TypeCounts, PanelResult, SearchSuggestion, FileListQuery } from '@/types';
-
-export const fileApi = {
-  import: (paths: string[]): Promise<ImportResult[]> => window.api.file.import(paths),
-  delete: (ids: string[]): Promise<void> => window.api.file.delete(ids),
-  update: (id: string, fields: { note?: string }): Promise<FileInfo> => window.api.file.update(id, fields),
-  list: (query?: FileListQuery): Promise<FileInfo[]> => window.api.file.list(query),
-  open: (id: string): Promise<void> => window.api.file.open(id),
-  showInDir: (id: string): Promise<void> => window.api.file.showInDir(id),
-  detail: (id: string): Promise<FileDetail> => window.api.file.detail(id),
-};
-
-export const tagApi = {
-  list: (): Promise<TagInfo[]> => window.api.tag.list(),
-  create: (name: string, color?: string): Promise<TagInfo> => window.api.tag.create(name, color),
-  delete: (id: string): Promise<void> => window.api.tag.delete(id),
-  update: (id: string, fields: { name?: string; color?: string }): Promise<TagInfo> => window.api.tag.update(id, fields),
-  setOnFile: (fileId: string, tagIds: string[]): Promise<void> => window.api.tag.setOnFile(fileId, tagIds),
-};
-
-export const searchApi = {
-  files: (keyword: string): Promise<FileInfo[]> => window.api.search.files(keyword),
-  suggest: (prefix: string): Promise<SearchSuggestion[]> => window.api.search.suggest(prefix),
-};
-
-export const panelApi = {
-  recent: (limit = 50): Promise<PanelResult> => window.api.panel.recent(limit),
-  untagged: (): Promise<PanelResult> => window.api.panel.untagged(),
-  frequent: (): Promise<PanelResult> => window.api.panel.frequent(),
-  typeCounts: (): Promise<TypeCounts> => window.api.panel.typeCounts(),
-  tagsWithCount: (): Promise<TagInfo[]> => window.api.panel.tagsWithCount(),
-};
-
-export const dialogApi = {
-  openFiles: (): Promise<string[]> => window.api.dialog.openFiles(),
-};
-```
-
-- [ ] **Step 2: main.tsx 入口**
-
-```tsx
-// src/renderer-react/src/main.tsx
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import { ConfigProvider } from 'antd';
-import zhCN from 'antd/locale/zh_CN';
-import App from './App';
-import './index.css';
-
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
-    <ConfigProvider
-      locale={zhCN}
-      theme={{
-        token: {
-          colorPrimary: '#6366f1',
-          borderRadius: 6,
-        },
-      }}
-    >
-      <App />
-    </ConfigProvider>
-  </React.StrictMode>,
-);
-```
-
-- [ ] **Step 3: App.tsx 骨架**
-
-```tsx
-// src/renderer-react/src/App.tsx
-import { useState, useCallback, useEffect } from 'react';
-import { Layout, message } from 'antd';
-import type { FileInfo, TagInfo, TypeCounts } from '@/types';
-import SearchBar from '@/components/SearchBar';
-import TagPanel from '@/components/TagPanel';
-import FileList from '@/components/FileList';
-import FileDetail from '@/components/FileDetail';
-import ImportZone from '@/components/ImportZone';
-import { fileApi, tagApi, panelApi } from '@/api/ipc';
-
-const { Header, Sider, Content } = Layout;
-
-type FilterType = 'all' | 'recent' | 'untagged' | 'frequent' | 'type';
-
-export default function App() {
-  const [files, setFiles] = useState<FileInfo[]>([]);
-  const [tags, setTags] = useState<TagInfo[]>([]);
-  const [typeCounts, setTypeCounts] = useState<TypeCounts>({ pdf: 0, word: 0, excel: 0, image: 0, other: 0 });
-  const [selectedFileId, setSelectedFileId] = useState<string | null>(null);
-  const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
-  const [searchKeyword, setSearchKeyword] = useState('');
-  const [currentFilter, setCurrentFilter] = useState<FilterType>('all');
-  const [currentTypeExts, setCurrentTypeExts] = useState<string[] | null>(null);
-  const [currentTypeKey, setCurrentTypeKey] = useState<string | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
-
-  const refreshFiles = useCallback(async () => {
-    let result: FileInfo[];
-    if (searchKeyword) {
-      result = await searchApi.files(searchKeyword);
-    } else if (selectedTagIds.length > 0) {
-      result = await fileApi.list({ tagIds: selectedTagIds });
-    } else if (currentFilter === 'recent') {
-      result = (await panelApi.recent(50)).files;
-    } else if (currentFilter === 'untagged') {
-      result = (await panelApi.untagged()).files;
-    } else if (currentFilter === 'frequent') {
-      result = (await panelApi.frequent()).files;
-    } else if (currentFilter === 'type' && currentTypeExts) {
-      result = await fileApi.list({ exts: currentTypeExts });
-    } else {
-      result = await fileApi.list({});
-    }
-    setFiles(result);
-  }, [searchKeyword, selectedTagIds, currentFilter, currentTypeExts]);
-
-  const refreshAll = useCallback(async () => {
-    await refreshFiles();
-    const [tagsData, counts] = await Promise.all([
-      panelApi.tagsWithCount(),
-      panelApi.typeCounts(),
-    ]);
-    setTags(tagsData);
-    setTypeCounts(counts);
-  }, [refreshFiles]);
-
-  useEffect(() => { refreshAll(); }, [refreshAll]);
-
-  const handleFileClick = async (id: string) => {
-    setSelectedFileId(id);
-    setDrawerOpen(true);
-  };
-
-  const handleFileDoubleClick = async (id: string) => {
-    try {
-      await fileApi.open(id);
-      refreshAll();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '打开失败';
-      if (msg.includes('FILE_MISSING')) {
-        message.warning('文件丢失，已被外部删除');
-      } else {
-        message.error('打开失败: ' + msg);
-      }
-    }
-  };
-
-  const handleImport = async (paths: string[]) => {
-    if (!paths.length) return;
-    const results = await fileApi.import(paths);
-    const imported = results.filter(r => r.status === 'imported');
-    const dupes = results.filter(r => r.status === 'duplicate');
-    const errors = results.filter(r => r.status === 'error');
-    let msg = `成功导入 ${imported.length} 个文件`;
-    if (dupes.length) msg += `，${dupes.length} 个重复已跳过`;
-    if (errors.length) msg += `，${errors.length} 个失败`;
-    message.success(msg);
-    refreshAll();
-  };
-
-  return (
-    <ImportZone onImport={handleImport}>
-      <Layout style={{ height: '100vh' }}>
-        <Header style={{ background: '#fff', padding: '0 16px', display: 'flex', alignItems: 'center', gap: 12, borderBottom: '1px solid #f0f0f0' }}>
-          <div style={{ fontSize: 18, fontWeight: 700, color: '#6366f1', whiteSpace: 'nowrap' }}>smartDoc</div>
-          <SearchBar
-            onSearch={(kw) => setSearchKeyword(kw)}
-            fileCount={files.length}
-            onImport={() => dialogApi.openFiles().then(handleImport)}
-          />
-        </Header>
-        <Layout>
-          <Sider width={240} style={{ background: '#fff', borderRight: '1px solid #f0f0f0', overflow: 'auto' }}>
-            <TagPanel
-              tags={tags}
-              typeCounts={typeCounts}
-              selectedTagIds={selectedTagIds}
-              currentFilter={currentFilter}
-              currentTypeFilter={currentTypeKey}
-              onSelectTags={(ids) => { setSelectedTagIds(ids); setCurrentFilter('all'); setSearchKeyword(''); }}
-              onSelectFilter={(filter) => { setCurrentFilter(filter); setSelectedTagIds([]); setSearchKeyword(''); }}
-              onSelectType={(typeKey, exts) => { setCurrentTypeKey(typeKey); setCurrentTypeExts(exts); setCurrentFilter('type'); setSelectedTagIds([]); setSearchKeyword(''); }}
-              onTagCreated={refreshAll}
-            />
-          </Sider>
-          <Content style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-            <FileList
-              files={files}
-              selectedFileId={selectedFileId}
-              onFileClick={handleFileClick}
-              onFileDoubleClick={handleFileDoubleClick}
-              selectedTagIds={selectedTagIds}
-              onRemoveTagFilter={(tagId) => setSelectedTagIds(prev => prev.filter(id => id !== tagId))}
-            />
-          </Content>
-        </Layout>
-        <FileDetail
-          fileId={selectedFileId}
-          open={drawerOpen}
-          allTags={tags}
-          onClose={() => { setDrawerOpen(false); setSelectedFileId(null); }}
-          onUpdated={refreshAll}
-        />
-      </Layout>
-    </ImportZone>
-  );
-}
-```
-
-- [ ] **Step 4: 创建基础全局样式**
-
-```css
-/* src/renderer-react/src/index.css */
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Microsoft YaHei', sans-serif; }
-#root { height: 100vh; }
-```
-
-- [ ] **Step 5: 更新主进程以支持 dev 模式加载 Vite**
-
-修改 `src/main/main.js` 中 `createWindow` 函数——当 `--dev` 参数传入时加载 Vite dev server：
-
-```js
-function createWindow() {
-  mainWindow = new BrowserWindow({
-    width: 1200,
-    height: 800,
-    webPreferences: {
-      preload: path.join(__dirname, '..', 'preload', 'preload.js'),
-      contextIsolation: true,
-      nodeIntegration: false,
-    },
-  });
-
-  const isDev = process.argv.includes('--dev');
-  if (isDev) {
-    mainWindow.loadURL('http://localhost:5173');
-    mainWindow.webContents.openDevTools();
-  } else {
-    mainWindow.loadFile(path.join(__dirname, '..', 'renderer-react', 'dist', 'index.html'));
-  }
-}
-```
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add src/renderer-react/src/api/ src/renderer-react/src/main.tsx src/renderer-react/src/App.tsx src/renderer-react/src/index.css src/main/main.js
-git commit -m "feat: add React app skeleton, IPC API layer, and dev mode support"
-```
-
----
-
-### Task 14: SearchBar 组件
-
-**Files:**
-- Create: `src/renderer-react/src/components/SearchBar.tsx`
-
-- [ ] **Step 1: 实现 SearchBar**
-
-```tsx
-// src/renderer-react/src/components/SearchBar.tsx
-import { Input, Button } from 'antd';
-import { SearchOutlined, PlusOutlined } from '@ant-design/icons';
-import { useState, useEffect, useRef } from 'react';
-
-interface SearchBarProps {
-  onSearch: (keyword: string) => void;
-  fileCount: number;
-  onImport: () => void;
-}
-
-export default function SearchBar({ onSearch, fileCount, onImport }: SearchBarProps) {
-  const [value, setValue] = useState('');
-  const timerRef = useRef<ReturnType<typeof setTimeout>>();
-
-  useEffect(() => {
-    clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(() => {
-      onSearch(value.trim());
-    }, 300);
-    return () => clearTimeout(timerRef.current);
-  }, [value, onSearch]);
-
-  return (
-    <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 12 }}>
-      <Input
-        prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-        placeholder="搜索文件名、标签..."
-        value={value}
-        onChange={e => setValue(e.target.value)}
-        allowClear
-        style={{ flex: 1 }}
-      />
-      <span style={{ fontSize: 12, color: '#999', whiteSpace: 'nowrap' }}>
-        共 {fileCount} 个文件
-      </span>
-      <Button type="primary" icon={<PlusOutlined />} onClick={onImport}>
-        导入文件
-      </Button>
-    </div>
-  );
-}
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/renderer-react/src/components/SearchBar.tsx
-git commit -m "feat: add SearchBar component with debounce"
-```
-
----
-
-### Task 15: TagPanel 组件
-
-**Files:**
-- Create: `src/renderer-react/src/components/TagPanel.tsx`
-
-- [ ] **Step 1: 实现左侧标签聚合面板**
-
-```tsx
-// src/renderer-react/src/components/TagPanel.tsx
-import { useState } from 'react';
-import { Input, Button, Tag, Divider, Space, ColorPicker, message } from 'antd';
-import {
-  ClockCircleOutlined, TagsOutlined, StarOutlined,
-  FilePdfOutlined, FileExcelOutlined, FileWordOutlined,
-  FileImageOutlined, FileOutlined, PlusOutlined,
-} from '@ant-design/icons';
-import type { TagInfo, TypeCounts } from '@/types';
-import { tagApi } from '@/api/ipc';
-
-interface TagPanelProps {
-  tags: TagInfo[];
-  typeCounts: TypeCounts;
-  selectedTagIds: string[];
-  currentFilter: string;
-  currentTypeFilter: string | null;
-  onSelectTags: (ids: string[]) => void;
-  onSelectFilter: (filter: string) => void;
-  onSelectType: (typeKey: string, exts: string[]) => void;
-  onTagCreated: () => void;
-}
-
-const MENU_STYLE: React.CSSProperties = {
-  padding: '4px 16px', cursor: 'pointer', display: 'flex',
-  alignItems: 'center', gap: 8, fontSize: 13, borderRadius: 6,
-};
-const MENU_ACTIVE: React.CSSProperties = {
-  ...MENU_STYLE, background: '#ede9fe', color: '#6366f1', fontWeight: 600,
-};
-const SECTION_HEADER: React.CSSProperties = {
-  padding: '12px 16px 4px', fontSize: 11, color: '#999',
-  textTransform: 'uppercase', fontWeight: 600,
-};
-
-export default function TagPanel({
-  tags, typeCounts, selectedTagIds, currentFilter, currentTypeFilter,
-  onSelectTags, onSelectFilter, onSelectType, onTagCreated,
-}: TagPanelProps) {
-  const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState('#6366f1');
-
-  const handleCreateTag = async () => {
-    const name = newTagName.trim();
-    if (!name) return;
-    try {
-      await tagApi.create(name, newTagColor);
-      setNewTagName('');
-      message.success(`标签"${name}"已创建`);
-      onTagCreated();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '创建失败';
-      message.error(msg);
-    }
-  };
-
-  const handleTagClick = (tagId: string, e: React.MouseEvent) => {
-    if (e.ctrlKey) {
-      const idx = selectedTagIds.indexOf(tagId);
-      onSelectTags(idx >= 0 ? selectedTagIds.filter(id => id !== tagId) : [...selectedTagIds, tagId]);
-    } else {
-      onSelectTags(selectedTagIds.length === 1 && selectedTagIds[0] === tagId ? [] : [tagId]);
-    }
-  };
-
-  const WORD_EXTS = ['.doc', '.docx', '.docm', '.dotx', '.odt', '.rtf'];
-  const EXCEL_EXTS = ['.xls', '.xlsx', '.xlsm', '.csv', '.xltx', '.ods'];
-  const IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.svg', '.webp', '.ico', '.tiff', '.tif'];
-
-  const typeItems = [
-    { key: '.pdf', exts: ['.pdf'], icon: <FilePdfOutlined />, label: 'PDF', count: typeCounts.pdf },
-    { key: 'word', exts: WORD_EXTS, icon: <FileWordOutlined />, label: 'Word', count: typeCounts.word },
-    { key: 'excel', exts: EXCEL_EXTS, icon: <FileExcelOutlined />, label: 'Excel', count: typeCounts.excel },
-    { key: 'image', exts: IMAGE_EXTS, icon: <FileImageOutlined />, label: '图片', count: typeCounts.image },
-    { key: 'other', exts: ['__other__'], icon: <FileOutlined />, label: '其他', count: typeCounts.other },
-  ];
-
-  return (
-    <div style={{ padding: '4px 0' }}>
-      {/* 快捷筛选 */}
-      <div style={SECTION_HEADER}>⚡ 快捷筛选</div>
-      <div
-        style={currentFilter === 'recent' ? MENU_ACTIVE : MENU_STYLE}
-        onClick={() => onSelectFilter('recent')}
-      >
-        <ClockCircleOutlined /> 最近添加
-      </div>
-      <div
-        style={currentFilter === 'untagged' ? MENU_ACTIVE : MENU_STYLE}
-        onClick={() => onSelectFilter('untagged')}
-      >
-        <TagsOutlined /> 未打标签
-      </div>
-      <div
-        style={currentFilter === 'frequent' ? MENU_ACTIVE : MENU_STYLE}
-        onClick={() => onSelectFilter('frequent')}
-      >
-        <StarOutlined /> 常用文档
-      </div>
-
-      <Divider style={{ margin: '8px 0' }} />
-
-      {/* 文件类型 */}
-      <div style={SECTION_HEADER}>📑 文件类型</div>
-      {typeItems.map(item => (
-        <div
-          key={item.key}
-          style={currentFilter === 'type' && currentTypeFilter === item.key ? MENU_ACTIVE : MENU_STYLE}
-          onClick={() => onSelectType(item.key, item.exts)}
-        >
-          {item.icon}
-          <span style={{ flex: 1 }}>{item.label}</span>
-          <span style={{ fontSize: 11, color: '#999' }}>{item.count}</span>
-        </div>
-      ))}
-
-      <Divider style={{ margin: '8px 0' }} />
-
-      {/* 标签云 */}
-      <div style={SECTION_HEADER}>🏷️ 标签云</div>
-      <div style={{ padding: '4px 16px', display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-        {tags.map(tag => {
-          const selected = selectedTagIds.includes(tag.id);
-          return (
-            <Tag
-              key={tag.id}
-              color={tag.color}
-              style={{
-                cursor: 'pointer', margin: 0, fontSize: 12,
-                border: selected ? `2px solid ${tag.color}` : '1px solid transparent',
-                fontWeight: selected ? 600 : 400,
-              }}
-              onClick={(e) => handleTagClick(tag.id, e)}
-            >
-              {tag.name} ({tag.file_count})
-            </Tag>
-          );
-        })}
-      </div>
-      <div style={{ padding: '0 16px', fontSize: 11, color: '#999', marginBottom: 8 }}>
-        💡 Ctrl+点击 多选标签，交集筛选
-      </div>
-
-      {/* 创建标签 */}
-      <div style={{ padding: '0 16px', display: 'flex', gap: 4 }}>
-        <Input
-          size="small"
-          placeholder="新标签名"
-          value={newTagName}
-          onChange={e => setNewTagName(e.target.value)}
-          onPressEnter={handleCreateTag}
-          style={{ flex: 1 }}
-        />
-        <ColorPicker
-          value={newTagColor}
-          onChange={(_, hex) => setNewTagColor(hex)}
-          size="small"
-        />
-        <Button size="small" icon={<PlusOutlined />} onClick={handleCreateTag} />
-      </div>
-    </div>
-  );
-}
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/renderer-react/src/components/TagPanel.tsx
-git commit -m "feat: add TagPanel component with filters and tag cloud"
-```
-
----
-
-### Task 16: FileList 组件
-
-**Files:**
-- Create: `src/renderer-react/src/components/FileList.tsx`
-
-- [ ] **Step 1: 实现文档主看板**
-
-```tsx
-// src/renderer-react/src/components/FileList.tsx
-import { Tag } from 'antd';
-import {
-  FilePdfOutlined, FileExcelOutlined, FileWordOutlined,
-  FileImageOutlined, FileTextOutlined, FileOutlined,
-} from '@ant-design/icons';
-import type { FileInfo } from '@/types';
-
-interface FileListProps {
-  files: FileInfo[];
-  selectedFileId: string | null;
-  onFileClick: (id: string) => void;
-  onFileDoubleClick: (id: string) => void;
-  selectedTagIds: string[];
-  onRemoveTagFilter: (tagId: string) => void;
-}
-
-function getIcon(ext: string) {
-  const style = { fontSize: 24 };
-  switch (ext) {
-    case '.pdf': return <FilePdfOutlined style={{ ...style, color: '#ef4444' }} />;
-    case '.doc': case '.docx': case '.docm': case '.rtf': case '.odt':
-      return <FileWordOutlined style={{ ...style, color: '#3b82f6' }} />;
-    case '.xls': case '.xlsx': case '.xlsm': case '.csv': case '.ods':
-      return <FileExcelOutlined style={{ ...style, color: '#10b981' }} />;
-    case '.jpg': case '.jpeg': case '.png': case '.gif': case '.bmp': case '.svg': case '.webp':
-      return <FileImageOutlined style={{ ...style, color: '#f59e0b' }} />;
-    case '.txt': return <FileTextOutlined style={{ ...style, color: '#6b7280' }} />;
-    default: return <FileOutlined style={{ ...style, color: '#6b7280' }} />;
-  }
-}
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString('zh-CN') + ' ' + d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-}
-
-const ROW_STYLE: React.CSSProperties = {
-  display: 'flex', alignItems: 'center', padding: '10px 16px', gap: 12,
-  cursor: 'pointer', borderBottom: '1px solid #f5f5f5',
-};
-const ROW_EVEN: React.CSSProperties = { ...ROW_STYLE, background: '#fafafa' };
-const ROW_SELECTED: React.CSSProperties = { ...ROW_STYLE, background: '#ede9fe' };
-
-export default function FileList({
-  files, selectedFileId, onFileClick, onFileDoubleClick,
-  selectedTagIds, onRemoveTagFilter,
-}: FileListProps) {
-  return (
-    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-      {/* 筛选标签栏 */}
-      {selectedTagIds.length > 0 && (
-        <div style={{
-          padding: '6px 16px', background: '#fafafa', borderBottom: '1px solid #f0f0f0',
-          display: 'flex', alignItems: 'center', gap: 8, fontSize: 12,
-        }}>
-          <span style={{ color: '#999' }}>当前筛选：</span>
-          {selectedTagIds.map(tid => (
-            <Tag key={tid} closable onClose={() => onRemoveTagFilter(tid)}>{tid}</Tag>
-          ))}
-          <span style={{ marginLeft: 'auto', color: '#999' }}>{files.length} 个结果</span>
-        </div>
-      )}
-
-      {/* 列表 */}
-      <div style={{ flex: 1, overflow: 'auto' }}>
-        {files.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: 60, color: '#999' }}>
-            暂无文件，拖拽文件到此处或点击"导入文件"
-          </div>
-        ) : (
-          files.map((f, i) => {
-            const isSelected = f.id === selectedFileId;
-            const isEven = i % 2 === 1;
-            let rowStyle = ROW_STYLE;
-            if (isSelected) rowStyle = ROW_SELECTED;
-            else if (isEven) rowStyle = ROW_EVEN;
-
-            return (
-              <div
-                key={f.id}
-                style={rowStyle}
-                onClick={() => onFileClick(f.id)}
-                onDoubleClick={() => onFileDoubleClick(f.id)}
-              >
-                <div style={{ width: 32, textAlign: 'center', flexShrink: 0 }}>
-                  {getIcon(f.ext)}
-                </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {f.name}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#999', marginTop: 2 }}>
-                    {formatSize(f.size)} · {formatDate(f.imported_at)}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', gap: 3, flexWrap: 'wrap', maxWidth: 220, justifyContent: 'flex-end' }}>
-                  {(f.tags || []).map(t => (
-                    <Tag key={t.id} color={t.color} style={{ margin: 0, fontSize: 11 }}>
-                      {t.name}
-                    </Tag>
-                  ))}
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-    </div>
-  );
-}
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/renderer-react/src/components/FileList.tsx
-git commit -m "feat: add FileList component with file list rendering"
-```
-
----
-
-### Task 17: FileDetail 组件
-
-**Files:**
-- Create: `src/renderer-react/src/components/FileDetail.tsx`
-
-- [ ] **Step 1: 实现右侧详情 Drawer**
-
-```tsx
-// src/renderer-react/src/components/FileDetail.tsx
-import { useState, useEffect, useCallback } from 'react';
-import { Drawer, Tag, Button, Input, Space, message, Select, Divider } from 'antd';
-import { EditOutlined, FolderOpenOutlined, DeleteOutlined } from '@ant-design/icons';
-import type { FileDetail as FileDetailType, TagInfo } from '@/types';
-import { fileApi, tagApi } from '@/api/ipc';
-
-interface FileDetailProps {
-  fileId: string | null;
-  open: boolean;
-  allTags: TagInfo[];
-  onClose: () => void;
-  onUpdated: () => void;
-}
-
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
-}
-
-function formatDate(iso: string): string {
-  const d = new Date(iso);
-  return d.toLocaleDateString('zh-CN') + ' ' + d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
-}
-
-export default function FileDetail({ fileId, open, allTags, onClose, onUpdated }: FileDetailProps) {
-  const [detail, setDetail] = useState<FileDetailType | null>(null);
-  const [note, setNote] = useState('');
-  const [addingTag, setAddingTag] = useState(false);
-
-  const loadDetail = useCallback(async () => {
-    if (!fileId) return;
-    try {
-      const d = await fileApi.detail(fileId);
-      setDetail(d);
-      setNote(d.note || '');
-    } catch {
-      message.error('加载文件详情失败');
-    }
-  }, [fileId]);
-
-  useEffect(() => { if (open) loadDetail(); }, [open, loadDetail]);
-
-  const handleNoteSave = async () => {
-    if (!detail) return;
-    await fileApi.update(detail.id, { note });
-    message.success('备注已保存');
-  };
-
-  const handleRemoveTag = async (tagId: string) => {
-    if (!detail) return;
-    const newIds = detail.tags.filter(t => t.id !== tagId).map(t => t.id);
-    await tagApi.setOnFile(detail.id, newIds);
-    loadDetail();
-    onUpdated();
-  };
-
-  const handleAddTag = async (tagId: string) => {
-    if (!detail) return;
-    const newIds = [...detail.tags.map(t => t.id), tagId];
-    await tagApi.setOnFile(detail.id, newIds);
-    loadDetail();
-    onUpdated();
-    setAddingTag(false);
-  };
-
-  const handleCreateAndAddTag = async (name: string) => {
-    if (!detail || !name.trim()) return;
-    try {
-      const tag = await tagApi.create(name.trim());
-      const newIds = [...detail.tags.map(t => t.id), tag.id];
-      await tagApi.setOnFile(detail.id, newIds);
-      loadDetail();
-      onUpdated();
-      setAddingTag(false);
-      message.success(`标签"${name}"已创建并添加`);
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : '操作失败';
-      message.error(msg);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!detail) return;
-    await fileApi.delete([detail.id]);
-    message.success('文件已删除');
-    onClose();
-    onUpdated();
-  };
-
-  if (!detail) return null;
-
-  const availableTags = allTags.filter(t => !detail.tags.some(dt => dt.id === t.id));
-
-  return (
-    <Drawer
-      title={detail.name}
-      open={open}
-      onClose={onClose}
-      width={300}
-      styles={{ body: { padding: 16 } }}
-    >
-      <div style={{ fontSize: 12, color: '#999', marginBottom: 16 }}>
-        {detail.ext} · {formatSize(detail.size)} · 打开 {detail.openCount} 次
-      </div>
-
-      {/* 标签 */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, color: '#999', marginBottom: 6 }}>标签</div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 8 }}>
-          {detail.tags.map(t => (
-            <Tag key={t.id} color={t.color} closable onClose={() => handleRemoveTag(t.id)}>
-              {t.name}
-            </Tag>
-          ))}
-        </div>
-        {!addingTag ? (
-          <Button size="small" icon={<EditOutlined />} onClick={() => setAddingTag(true)}>
-            添加标签
-          </Button>
-        ) : (
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <Select
-              size="small"
-              style={{ width: '100%' }}
-              placeholder="选择已有标签..."
-              options={availableTags.map(t => ({ label: t.name, value: t.id }))}
-              onChange={(val) => handleAddTag(val)}
-            />
-            <Input.Search
-              size="small"
-              placeholder="或输入新标签名创建..."
-              enterButton="创建"
-              onSearch={handleCreateAndAddTag}
-            />
-            <Button size="small" onClick={() => setAddingTag(false)}>取消</Button>
-          </Space>
-        )}
-      </div>
-
-      {/* 备注 */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, color: '#999', marginBottom: 6 }}>备注</div>
-        <Input.TextArea
-          value={note}
-          onChange={e => setNote(e.target.value)}
-          onBlur={handleNoteSave}
-          placeholder="添加备注..."
-          rows={3}
-        />
-      </div>
-
-      <Divider />
-
-      {/* 文件信息 */}
-      <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 12, color: '#999', marginBottom: 6 }}>文件信息</div>
-        <div style={{ fontSize: 11, color: '#999', lineHeight: 1.8 }}>
-          导入：{formatDate(detail.imported_at)}<br />
-          路径：{detail.storage_path}<br />
-          大小：{formatSize(detail.size)}
-        </div>
-      </div>
-
-      {/* 操作按钮 */}
-      <Space direction="vertical" style={{ width: '100%' }}>
-        <Button
-          block
-          icon={<FolderOpenOutlined />}
-          onClick={() => fileApi.open(detail.id).then(() => onUpdated())}
-        >
-          打开文件
-        </Button>
-        <Button
-          block
-          onClick={() => fileApi.showInDir(detail.id)}
-        >
-          在文件夹中显示
-        </Button>
-        <Button
-          block
-          danger
-          icon={<DeleteOutlined />}
-          onClick={handleDelete}
-        >
-          删除文件
-        </Button>
-      </Space>
-    </Drawer>
-  );
-}
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/renderer-react/src/components/FileDetail.tsx
-git commit -m "feat: add FileDetail Drawer component"
-```
-
----
-
-### Task 18: ImportZone 拖拽导入组件
-
-**Files:**
-- Create: `src/renderer-react/src/components/ImportZone.tsx`
-
-- [ ] **Step 1: 实现拖拽导入区域**
-
-```tsx
-// src/renderer-react/src/components/ImportZone.tsx
-import { useState, useCallback, type DragEvent, type ReactNode } from 'react';
-
-interface ImportZoneProps {
-  onImport: (paths: string[]) => void;
-  children: ReactNode;
-}
-
-const overlayStyle: React.CSSProperties = {
-  position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-  background: 'rgba(99, 102, 241, 0.12)', display: 'flex',
-  alignItems: 'center', justifyContent: 'center',
-  fontSize: 28, color: '#6366f1', zIndex: 9999,
-  pointerEvents: 'none', userSelect: 'none',
-};
-
-export default function ImportZone({ onImport, children }: ImportZoneProps) {
-  const [dragging, setDragging] = useState(false);
-
-  const handleDragOver = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragging(true);
-  }, []);
-
-  const handleDragLeave = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.target === e.currentTarget) {
-      setDragging(false);
-    }
-  }, []);
-
-  const handleDrop = useCallback((e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setDragging(false);
-    const files = Array.from(e.dataTransfer.files);
-    const paths = files.map(f => (f as unknown as { path?: string }).path).filter(Boolean) as string[];
-    if (paths.length > 0) {
-      onImport(paths);
-    }
-  }, [onImport]);
-
-  return (
-    <div
-      onDragOver={handleDragOver}
-      onDragLeave={handleDragLeave}
-      onDrop={handleDrop}
-      style={{ height: '100vh' }}
-    >
-      {children}
-      {dragging && (
-        <div style={overlayStyle}>
-          📥 松开以导入文件
-        </div>
-      )}
-    </div>
-  );
-}
-```
-
-- [ ] **Step 2: Commit**
-
-```bash
-git add src/renderer-react/src/components/ImportZone.tsx
-git commit -m "feat: add ImportZone drag-and-drop import component"
-```
-
----
-
-### Task 19: 整合验证与样式微调
-
-- [ ] **Step 1: 启动 React 开发模式**
-
-```bash
-cd E:\code\smartDoc && npm run dev
-```
-
-预期：
-1. Vite 在 localhost:5173 启动
-2. Electron 窗口打开，加载 React 页面
-3. 显示 smartDoc 完整 UI
-
-- [ ] **Step 2: 验证全部功能**
-
-逐一验证：
-1. **导入文件** — 点击"导入文件"按钮 / 拖拽文件到窗口
-2. **文件列表** — 文件正确显示，图标、大小、日期、标签 Chip
-3. **搜索** — 输入关键词，300ms 后自动搜索
-4. **左侧面板** — 快捷筛选（最近/未标签/常用）/ 类型分类 / 标签云多选
-5. **标签操作** — 创建标签、添加标签到文件、移除标签
-6. **文件详情** — 单击文件弹出 Drawer
-7. **打开文件** — 双击文件 / Drawer 中"打开文件"
-8. **备注编辑** — 失焦自动保存
-9. **删除文件** — Drawer 中"删除文件"
-10. **拖拽导入** — 拖拽显示遮罩，松手导入
-
-- [ ] **Step 3: 修复样式不一致问题**
-
-检查并修复：
-- 确保文件列表行高一致
-- 确保标签 Chip 颜色与标签设置一致
-- 确保 Drawer 宽度与设计一致（240px 内容）
-- 确保交替行背景色生效
-- 确保当前筛选标签栏可正常移除
-
-- [ ] **Step 4: 验证错误处理**
-
-1. 尝试打开已被外部删除的文件 → 应提示"文件丢失"
-2. 创建重名标签 → 应提示"标签名已存在"
-3. 导入超大文件 → 应正常处理
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add -A && git commit -m "feat: complete Part 2 — React + Ant Design full UI, verified"
-```
-
----
-
-## 验收总结
-
-### 第一部分验收
-
-| 验收项 | 验证方法 |
-|--------|---------|
-| 数据库初始化 | 启动应用，检查 `%APPDATA%/smartdoc/smartdoc.db` 存在且包含 4 张表 |
-| 文件导入 | 拖拽/按钮导入文件，数据库中 files 表有记录，仓库 `files/{uuid}.ext` 存在 |
-| 标签 CRUD | 创建/编辑/删除标签，`tags` 表正确 |
-| 标签关联 | 文件关联/取消标签，`file_tags` 表正确 |
-| 多选筛选 | Ctrl+点击多个标签，列表显示同时拥有这些标签的文件 |
-| 快捷筛选 | 最近/未标签/常用 筛选结果正确 |
-| 类型分类 | 计数正确，点击筛选正确 |
-| 搜索 | 文件名/标签名/备注搜索正确 |
-| 打开文件 | 双击调用系统程序，`file_opens` 表新增记录 |
-| 文件丢失 | 外部删除仓库文件后，列表中打开提示"文件丢失" |
-| 备注保存 | 修改备注后 `files` 表更新 |
-
-### 第二部分验收
-
-| 验收项 | 验证方法 |
-|--------|---------|
-| UI 布局一致性 | 对照设计文档第 4 节，布局吻合 |
-| Ant Design 组件 | 全部 UI 使用 antd 组件，无原生 HTML 表单 |
-| 图标使用 | 文件类型图标和操作图标使用 @ant-design/icons |
-| 交互细节 | 单击→Drawer，双击→打开文件，拖拽→遮罩→导入 |
-| 第一部分全功能 | 在 React UI 中复验第一部分的全部后台功能 |
