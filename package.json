@@ -4,15 +4,13 @@
   "description": "Windows 桌面文档管理软件",
   "main": "src/main/main.js",
   "scripts": {
-    "start": "electron .",
-    "rebuild": "electron-rebuild -f -w better-sqlite3"
+    "start": "electron ."
   },
   "private": true,
   "devDependencies": {
-    "electron": "^33.0.0",
-    "@electron/rebuild": "^4.0.4"
+    "electron": "^33.0.0"
   },
   "dependencies": {
-    "better-sqlite3": "^11.0.0"
+    "sql.js": "^1.10.0"
   }
 }

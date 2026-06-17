@@ -25,11 +25,11 @@ function createWindow() {
   }
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   // 初始化数据库
   const userDataPath = app.getPath('userData');
   const dbPath = path.join(userDataPath, 'smartdoc.db');
-  init(dbPath);
+  await init(dbPath);
 
   // 初始化文件仓库
   const repoPath = path.join(app.getPath('documents'), 'smartDoc-repo');
