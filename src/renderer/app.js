@@ -38,6 +38,59 @@ const state = {
 // ========== 工具函数 ==========
 function $(sel) { return document.querySelector(sel); }
 function $$(sel) { return document.querySelectorAll(sel); }
+
+/**
+ * 自定义模态框 — 替代 prompt() / confirm()
+ * @param {string} message 提示文本
+ * @param {object} opts
+ *   opts.type: 'confirm' (默认) | 'input'
+ *   opts.placeholder: input 占位文字
+ *   opts.defaultValue: input 默认值
+ * @returns {Promise<string|boolean|null>} confirm: true/false, input: 输入的字符串/null
+ */
+function showModal(message, opts = {}) {
+  return new Promise((resolve) => {
+    const type = opts.type || 'confirm';
+    $('#modal-message').textContent = message;
+    $('#modal-input').style.display = type === 'input' ? 'block' : 'none';
+    $('#modal-input').value = opts.defaultValue || '';
+    $('#modal-input').placeholder = opts.placeholder || '';
+    $('#modal-overlay').style.display = 'flex';
+
+    if (type === 'input') {
+      setTimeout(() => $('#modal-input').focus(), 50);
+    } else {
+      setTimeout(() => $('#modal-ok').focus(), 50);
+    }
+
+    function cleanup() {
+      $('#modal-overlay').style.display = 'none';
+      $('#modal-cancel').removeEventListener('click', onCancel);
+      $('#modal-ok').removeEventListener('click', onOk);
+      document.removeEventListener('keydown', onKey);
+    }
+
+    function onCancel() {
+      cleanup();
+      resolve(type === 'input' ? null : false);
+    }
+
+    function onOk() {
+      cleanup();
+      resolve(type === 'input' ? $('#modal-input').value.trim() || null : true);
+    }
+
+    function onKey(e) {
+      if (e.key === 'Escape') onCancel();
+      if (e.key === 'Enter') onOk();
+    }
+
+    $('#modal-cancel').addEventListener('click', onCancel);
+    $('#modal-ok').addEventListener('click', onOk);
+    document.addEventListener('keydown', onKey);
+  });
+}
+
 function formatSize(bytes) {
   if (bytes < 1024) return bytes + ' B';
   if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
@@ -119,7 +172,7 @@ async function handleOpenFile(id) {
 }
 
 async function handleDeleteFile(id) {
-  if (!confirm('确定删除此文件？')) return;
+  if (!(await showModal('确定删除此文件？'))) return;
   await window.api.file.delete([id]);
   state.selectedFileId = null;
   $('#detail-panel').style.display = 'none';
@@ -249,7 +302,10 @@ $('#btn-detail-add-tag').addEventListener('click', async () => {
       return;
     }
 
-    const tagName = prompt('输入要添加的标签名（或新标签名）:\n已有标签：' + available.map(t => t.name).join(', '));
+    const tagName = await showModal(
+      '已有标签：' + available.map(t => t.name).join(', '),
+      { type: 'input', placeholder: '选择已有或输入新标签名' }
+    );
     if (!tagName) return;
 
     let tag = state.allTags.find(t => t.name === tagName);
