@@ -1,4 +1,31 @@
 // src/renderer/app.js
+// ========== DOM 诊断（启动时验证所有必需元素） ==========
+(function checkDom() {
+  const requiredIds = [
+    'btn-import', 'search-input', 'btn-create-tag', 'new-tag-name',
+    'btn-detail-add-tag', 'btn-open-file', 'btn-show-in-dir', 'btn-delete-file',
+    'detail-panel', 'detail-name', 'detail-note', 'file-list', 'tag-cloud',
+    'toast', 'drop-overlay'
+  ];
+  const missing = requiredIds.filter(id => !document.getElementById(id));
+  if (missing.length > 0) {
+    document.body.innerHTML = '<div style="color:red;padding:20px;font-size:16px">'
+      + '<b>DOM 节点缺失:</b><br>' + missing.join('<br>') + '</div>';
+    throw new Error('Missing DOM elements: ' + missing.join(', '));
+  }
+  console.log('smartDoc: all ' + requiredIds.length + ' required DOM elements found');
+})();
+
+// ========== 全局错误捕获 ==========
+window.addEventListener('error', (e) => {
+  console.error('Global error:', e.error || e.message);
+  showToast('发生错误: ' + (e.error ? e.error.message : e.message));
+});
+window.addEventListener('unhandledrejection', (e) => {
+  console.error('Unhandled rejection:', e.reason);
+  showToast('操作失败: ' + (e.reason ? (e.reason.message || String(e.reason)) : '未知错误'));
+});
+
 // ========== 状态 ==========
 const state = {
   currentFiles: [],
