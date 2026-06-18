@@ -53,11 +53,16 @@ async function doSearch() {
 
 // ========== 文件操作 ==========
 async function loadAllFiles(query = {}) {
-  if (state.selectedTagIds.length > 0) {
-    query.tagIds = state.selectedTagIds;
+  try {
+    if (state.selectedTagIds.length > 0) {
+      query.tagIds = state.selectedTagIds;
+    }
+    state.currentFiles = await window.api.file.list(query);
+    renderFileList();
+  } catch (err) {
+    console.error('loadAllFiles error:', err);
+    showToast('加载文件列表失败');
   }
-  state.currentFiles = await window.api.file.list(query);
-  renderFileList();
 }
 
 async function handleImport(paths) {
@@ -100,26 +105,32 @@ async function handleUpdateNote(id, note) {
 }
 
 async function showFileDetail(id) {
-  state.selectedFileId = id;
-  const detail = await window.api.file.detail(id);
-  $('#detail-name').textContent = detail.name;
-  $('#detail-meta').textContent = `${detail.ext} · ${formatSize(detail.size)} · 打开 ${detail.openCount} 次`;
-  $('#detail-note').value = detail.note || '';
+  try {
+    state.selectedFileId = id;
+    const detail = await window.api.file.detail(id);
+    $('#detail-name').textContent = detail.name;
+    $('#detail-meta').textContent = `${detail.ext} · ${formatSize(detail.size)} · 打开 ${detail.openCount} 次`;
+    $('#detail-note').value = detail.note || '';
 
-  $('#detail-tags').innerHTML = detail.tags.map(t =>
-    `<span class="tag-chip" style="background:${t.color}20;color:${t.color};border-color:${t.color}" onclick="removeTagFromFile('${detail.id}','${t.id}')">${t.name} ✕</span>`
-  ).join('');
+    $('#detail-tags').innerHTML = detail.tags.map(t =>
+      `<span class="tag-chip" style="background:${t.color}20;color:${t.color};border-color:${t.color}" onclick="removeTagFromFile('${detail.id}','${t.id}')">${t.name} ✕</span>`
+    ).join('');
 
-  $('#detail-info').innerHTML = `
-    导入：${formatDate(detail.imported_at)}<br>
-    路径：${detail.storage_path}<br>
-    大小：${formatSize(detail.size)}
-  `;
+    $('#detail-info').innerHTML = `
+      导入：${formatDate(detail.imported_at)}<br>
+      路径：${detail.storage_path}<br>
+      大小：${formatSize(detail.size)}
+    `;
 
-  $('#detail-panel').style.display = 'flex';
-  $('#file-list').querySelectorAll('.file-row').forEach(el => {
-    el.classList.toggle('selected', el.dataset.id === id);
-  });
+    $('#detail-panel').style.display = 'flex';
+    $('#file-list').querySelectorAll('.file-row').forEach(el => {
+      el.classList.toggle('selected', el.dataset.id === id);
+    });
+  } catch (err) {
+    console.error('showFileDetail error:', err);
+    showToast('加载文件详情失败: ' + (err && err.message ? err.message : '未知错误'));
+    state.selectedFileId = null;
+  }
 }
 
 async function removeTagFromFile(fileId, tagId) {
@@ -183,40 +194,49 @@ $('#btn-clear-tags').addEventListener('click', () => {
 });
 
 $('#btn-create-tag').addEventListener('click', async () => {
-  const name = $('#new-tag-name').value.trim();
-  if (!name) return;
-  const color = $('#new-tag-color').value;
   try {
+    const name = $('#new-tag-name').value.trim();
+    if (!name) { showToast('请输入标签名'); return; }
+    const color = $('#new-tag-color').value;
     await window.api.tag.create(name, color);
     $('#new-tag-name').value = '';
     refreshAll();
+    showToast(`标签 "${name}" 已创建`);
   } catch (err) {
-    showToast(err.message);
+    showToast(err && err.message ? err.message : '创建标签失败');
+    console.error('create tag error:', err);
   }
 });
 
 $('#btn-detail-add-tag').addEventListener('click', async () => {
-  const fileId = state.selectedFileId;
-  if (!fileId) return;
-  const detail = await window.api.file.detail(fileId);
-  const existingIds = detail.tags.map(t => t.id);
-  const available = state.allTags.filter(t => !existingIds.includes(t.id));
+  try {
+    const fileId = state.selectedFileId;
+    if (!fileId) { showToast('请先选择一个文件'); return; }
 
-  if (available.length === 0) {
-    showToast('没有可添加的标签，请先创建新标签');
-    return;
+    const detail = await window.api.file.detail(fileId);
+    const existingIds = detail.tags.map(t => t.id);
+    const available = state.allTags.filter(t => !existingIds.includes(t.id));
+
+    if (available.length === 0) {
+      showToast('没有可添加的标签，请在左侧面板先创建新标签');
+      return;
+    }
+
+    const tagName = prompt('输入要添加的标签名（或新标签名）:\n已有标签：' + available.map(t => t.name).join(', '));
+    if (!tagName) return;
+
+    let tag = state.allTags.find(t => t.name === tagName);
+    if (!tag) {
+      tag = await window.api.tag.create(tagName, '#6366f1');
+    }
+    await window.api.tag.setOnFile(fileId, [...existingIds, tag.id]);
+    showFileDetail(fileId);
+    refreshAll();
+    showToast(`已添加标签 "${tag.name}"`);
+  } catch (err) {
+    showToast(err && err.message ? err.message : '添加标签失败');
+    console.error('add tag error:', err);
   }
-
-  const tagName = prompt('输入要添加的标签名（或新标签名）:\n已有标签：' + available.map(t => t.name).join(', '));
-  if (!tagName) return;
-
-  let tag = state.allTags.find(t => t.name === tagName);
-  if (!tag) {
-    tag = await window.api.tag.create(tagName, '#6366f1');
-  }
-  await window.api.tag.setOnFile(fileId, [...existingIds, tag.id]);
-  showFileDetail(fileId);
-  refreshAll();
 });
 
 // ========== 左侧面板筛选 ==========
@@ -390,7 +410,12 @@ async function loadTypeCounts() {
 
 // ========== 初始化 ==========
 async function init() {
-  await refreshAll();
+  try {
+    await refreshAll();
+  } catch (err) {
+    console.error('App init error:', err);
+    showToast('应用初始化失败，请刷新页面');
+  }
 }
 
 init();

@@ -82,13 +82,12 @@ async function init(filePath) {
  * 给 sql.js Database 实例添加 better-sqlite3 兼容方法
  */
 function patchDatabase(SQL, _db) {
-  // db.prepare(sql) -> StmtWrapper { get, all, run, bind }
   const origPrepare = _db.prepare.bind(_db);
   const origRun = _db.run.bind(_db);
 
   _db.prepare = function (sql) {
     const stmt = origPrepare(sql);
-    return new StmtWrapper(stmt, sql);
+    return new StmtWrapper(stmt, sql, origRun);
   };
 
   // db.transaction(fn) - 兼容层
@@ -104,32 +103,44 @@ function patchDatabase(SQL, _db) {
       }
     };
   };
+
+  // 保留原生 run 方法但包装一下以便更好地处理参数
+  const rawRun = _db.run;
+  _db.run = function (sql, ...params) {
+    if (params.length > 0) {
+      return rawRun.call(this, sql, params);
+    }
+    return rawRun.call(this, sql);
+  };
 }
 
 /**
  * Statement 包装器，提供 better-sqlite3 兼容的 .get()/.all()/.run() 接口
  */
 class StmtWrapper {
-  constructor(stmt, sql) {
+  constructor(stmt, sql, origRun) {
     this._stmt = stmt;
     this._sql = sql;
+    this._origRun = origRun;
   }
 
   get(...params) {
-    this._stmt.bind(params);
+    this._stmt.reset();
+    if (params.length > 0) {
+      this._stmt.bind(params.flat());
+    }
     if (this._stmt.step()) {
       const cols = this._stmt.getColumnNames();
       const vals = this._stmt.get();
       const row = {};
       cols.forEach((c, i) => { row[c] = vals[i]; });
-      this._stmt.free();
       return row;
     }
-    this._stmt.free();
     return undefined;
   }
 
   all(...params) {
+    this._stmt.reset();
     if (params.length > 0) {
       this._stmt.bind(params.flat());
     }
@@ -141,26 +152,23 @@ class StmtWrapper {
       cols.forEach((c, i) => { row[c] = vals[i]; });
       rows.push(row);
     }
-    this._stmt.free();
     return rows;
   }
 
   run(...params) {
-    // 为 sql.js 生成正确的 SQL 执行
-    // this._stmt 已经被 prepare 了，但 sql.js 不能直接 execute prepared statement with params
-    // 所以直接通过 db.run 执行
+    // 直接使用原生 db.run() 执行，不释放 prepared statement
+    // 这样可以在循环中多次调用同一个 StmtWrapper
     if (params.length > 0) {
-      // 用原始 SQL 重新执行
-      this._stmt.free();
-      // 返回一个带有 changes 属性的对象
-      db.run(this._sql, params);
-      return { changes: db.getRowsModified() };
+      this._origRun(this._sql, params.flat());
+    } else {
+      this._origRun(this._sql);
     }
-    // 无参数时，step 执行
-    this._stmt.step();
-    const changes = db.getRowsModified();
+    return { changes: db.getRowsModified() };
+  }
+
+  // 释放底层语句
+  free() {
     this._stmt.free();
-    return { changes };
   }
 }
 
