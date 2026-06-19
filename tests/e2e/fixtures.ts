@@ -26,10 +26,14 @@ export const test = base.extend<Fixtures>({
       path.join(userDataDir, 'smartdoc-config.json'),
       JSON.stringify({ repoPath: repoDir })
     )
+    const cleanEnv = { ...process.env }
+    // Strip vars that would put Electron into Node mode and break window launch
+    delete cleanEnv.ELECTRON_RUN_AS_NODE
+    delete cleanEnv.VSCODE_ESM_ENTRYPOINT
     const electronApp = await _electron.launch({
       args: [path.join(__dirname, '../../out/main/index.js')],
       env: {
-        ...process.env,
+        ...cleanEnv,
         SMARTDOC_USER_DATA: userDataDir
       }
     })
