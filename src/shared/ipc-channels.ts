@@ -6,7 +6,8 @@ export const IPC = {
   FileList: 'file:list',
   FileDelete: 'file:delete',
   FileOpen: 'file:open',
-  FileShowInDir: 'file:showInDir'
+  FileShowInDir: 'file:showInDir',
+  DialogPickFiles: 'dialog:pickFiles'
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]

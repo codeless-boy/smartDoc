@@ -1,4 +1,4 @@
-import { ipcMain, shell, BrowserWindow } from 'electron'
+import { ipcMain, shell, BrowserWindow, dialog } from 'electron'
 import path from 'node:path'
 import { IPC } from '@shared/ipc-channels'
 import type {
@@ -42,6 +42,13 @@ export function registerFileIpc(svc: FileService, repoRoot: () => string | null)
     const root = repoRoot()
     if (!file || !root) return
     shell.showItemInFolder(path.join(root, file.storagePath))
+  })
+
+  ipcMain.handle(IPC.DialogPickFiles, async (): Promise<string[]> => {
+    const r = await dialog.showOpenDialog({
+      properties: ['openFile', 'multiSelections']
+    })
+    return r.canceled ? [] : r.filePaths
   })
 
   // 让窗口在 ready 时把当前列表广播给 renderer（可选；Part 1 渲染端用主动 fetch）

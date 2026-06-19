@@ -24,6 +24,9 @@ const api = {
     open: (id: string): Promise<void> => ipcRenderer.invoke(IPC.FileOpen, id),
     showInDir: (id: string): Promise<void> =>
       ipcRenderer.invoke(IPC.FileShowInDir, id)
+  },
+  dialog: {
+    pickFiles: (): Promise<string[]> => ipcRenderer.invoke(IPC.DialogPickFiles)
   }
 }
 
