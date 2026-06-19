@@ -11,6 +11,8 @@
     "start": "electron-vite preview",
     "test": "vitest",
     "test:run": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
     "typecheck:node": "tsc --noEmit -p tsconfig.node.json",
     "typecheck:web": "tsc --noEmit -p tsconfig.web.json",
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
@@ -18,12 +20,16 @@
     "format": "prettier --write ."
   },
   "dependencies": {
+    "@ant-design/icons": "^5.4.0",
+    "antd": "^5.20.0",
     "better-sqlite3": "^12.11.1",
     "electron-log": "^5.2.0",
     "electron-store": "^10.0.0",
-    "uuid": "^10.0.0"
+    "uuid": "^10.0.0",
+    "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "@playwright/test": "^1.47.0",
     "@types/better-sqlite3": "^7.6.11",
     "@types/node": "^22.5.0",
     "@types/react": "^18.3.5",
