@@ -29,7 +29,9 @@ const api = {
       ipcRenderer.invoke(IPC.FileShowInDir, id),
     openLog: (id: string): Promise<void> => ipcRenderer.invoke(IPC.FileOpenLog, id),
     update: (id: string, fields: { note?: string }): Promise<FileInfo | null> =>
-      ipcRenderer.invoke(IPC.FileUpdate, id, fields)
+      ipcRenderer.invoke(IPC.FileUpdate, id, fields),
+    existsOnDisk: (id: string): Promise<boolean> =>
+      ipcRenderer.invoke(IPC.FileExistsOnDisk, id)
   },
   dialog: {
     pickFiles: (): Promise<string[]> => ipcRenderer.invoke(IPC.DialogPickFiles)

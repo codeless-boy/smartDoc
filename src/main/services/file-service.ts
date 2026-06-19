@@ -221,4 +221,12 @@ export class FileService {
       .get(id) as FileRow | undefined
     return row ? rowToFile(row) : null
   }
+
+  async existsOnDisk(id: string): Promise<boolean> {
+    const f = this.list({ filter: {} }).find((x) => x.id === id)
+    if (!f) return false
+    const parts = f.storagePath.split('/')
+    // parts: ['files', uuid, name]  -- but name may itself contain segments. Re-join from index 2.
+    return this.repo.exists(parts[1], parts.slice(2).join('/'))
+  }
 }

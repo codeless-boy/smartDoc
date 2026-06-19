@@ -55,6 +55,10 @@ export function registerFileIpc(svc: FileService, repoRoot: () => string | null)
     return svc.list({ filter: {} }).find((f) => f.id === id) ?? null
   })
 
+  ipcMain.handle(IPC.FileExistsOnDisk, async (_e, id: string): Promise<boolean> =>
+    svc.existsOnDisk(id)
+  )
+
   ipcMain.handle(IPC.DialogPickFiles, async (): Promise<string[]> => {
     const r = await dialog.showOpenDialog({
       properties: ['openFile', 'multiSelections']

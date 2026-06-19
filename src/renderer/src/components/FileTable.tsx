@@ -71,7 +71,13 @@ export function FileTable(): JSX.Element {
       }
       onRow={(record) => ({
         onClick: () => select(record.id),
-        onDoubleClick: () => {
+        onDoubleClick: async () => {
+          const ok = await window.api.file.existsOnDisk(record.id)
+          if (!ok) {
+            const { message } = await import('antd')
+            message.error('文件已丢失，无法打开')
+            return
+          }
           void window.api.file.open(record.id)
         }
       })}
