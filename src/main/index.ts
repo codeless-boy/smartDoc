@@ -60,7 +60,7 @@ function createWindow(): void {
     y: bounds.y,
     show: false,
     webPreferences: {
-      preload: path.join(__dirname, '../preload/index.mjs'),
+      preload: path.join(__dirname, '../preload/index.js'),
       sandbox: false,
       contextIsolation: true,
       nodeIntegration: false
