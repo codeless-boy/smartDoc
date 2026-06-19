@@ -7,6 +7,7 @@ export const IPC = {
   FileDelete: 'file:delete',
   FileOpen: 'file:open',
   FileShowInDir: 'file:showInDir',
+  FileUpdate: 'file:update',
   DialogPickFiles: 'dialog:pickFiles',
   TagList: 'tag:list',
   TagCreate: 'tag:create',
