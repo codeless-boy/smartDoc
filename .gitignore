@@ -11,3 +11,5 @@ coverage/
 .env.local
 *.tsbuildinfo
 .superpowers/
+playwright-report/
+test-results/
