@@ -7,7 +7,14 @@ export const IPC = {
   FileDelete: 'file:delete',
   FileOpen: 'file:open',
   FileShowInDir: 'file:showInDir',
-  DialogPickFiles: 'dialog:pickFiles'
+  DialogPickFiles: 'dialog:pickFiles',
+  TagList: 'tag:list',
+  TagCreate: 'tag:create',
+  TagDelete: 'tag:delete',
+  TagUpdate: 'tag:update',
+  TagSetOnFile: 'tag:setOnFile',
+  SearchSuggest: 'search:suggest',
+  FileOpenLog: 'file:openLog'
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]
