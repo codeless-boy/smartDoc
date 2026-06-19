@@ -89,6 +89,10 @@ function createWindow(): void {
   }
 }
 
+if (process.env['SMARTDOC_USER_DATA']) {
+  app.setPath('userData', process.env['SMARTDOC_USER_DATA'])
+}
+
 app.whenReady().then(async () => {
   try {
     await bootstrap()
