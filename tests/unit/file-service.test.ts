@@ -56,10 +56,10 @@ describe('FileService', () => {
   it('skip leaves db and disk unchanged', async () => {
     const src = await writeSource('a.pdf')
     await svc.import({ sourcePath: src })
-    const before = svc.list({})
+    const before = svc.list({ filter: {} })
     const result = await svc.import({ sourcePath: src, duplicateAction: 'skip' })
     expect(result.status).toBe('skipped')
-    expect(svc.list({})).toEqual(before)
+    expect(svc.list({ filter: {} })).toEqual(before)
   })
 
   it('overwrite reuses uuid, updates size, preserves note', async () => {
@@ -111,7 +111,7 @@ describe('FileService', () => {
       )
     }
     await svc.import({ sourcePath: await writeSource('b.pdf') })
-    const rows = svc.list({})
+    const rows = svc.list({ filter: {} })
     expect(rows.map((r) => r.name)).toEqual(['b.pdf', 'a.pdf'])
   })
 
@@ -119,7 +119,38 @@ describe('FileService', () => {
     const r = await svc.import({ sourcePath: await writeSource('a.pdf') })
     if (r.status !== 'imported') throw new Error('setup failed')
     await svc.delete([r.file.id])
-    expect(svc.list({})).toHaveLength(0)
+    expect(svc.list({ filter: {} })).toHaveLength(0)
     expect(await fs.readdir(path.join(repoRoot, 'files'))).toHaveLength(0)
+  })
+
+  it('filter by keyword matches name (case-insensitive)', async () => {
+    await svc.import({ sourcePath: await writeSource('Report.pdf') })
+    await svc.import({ sourcePath: await writeSource('photo.jpg') })
+    const rows = svc.list({ filter: { keyword: 'report' } })
+    expect(rows.map((r) => r.name)).toEqual(['Report.pdf'])
+  })
+
+  it('filter by exts narrows result', async () => {
+    await svc.import({ sourcePath: await writeSource('a.pdf') })
+    await svc.import({ sourcePath: await writeSource('b.png') })
+    const rows = svc.list({ filter: { exts: ['png'] } })
+    expect(rows.map((r) => r.name)).toEqual(['b.png'])
+  })
+
+  it('logOpen records into file_opens', async () => {
+    const r = await svc.import({ sourcePath: await writeSource('a.pdf') })
+    if (r.status !== 'imported') throw new Error('setup')
+    svc.logOpen(r.file.id)
+    svc.logOpen(r.file.id)
+    const cnt = (db
+      .prepare('SELECT COUNT(*) AS c FROM file_opens WHERE file_id=?')
+      .get(r.file.id) as { c: number }).c
+    expect(cnt).toBe(2)
+  })
+
+  it('list returns each row with tagIds (empty by default)', async () => {
+    await svc.import({ sourcePath: await writeSource('a.pdf') })
+    const rows = svc.list({ filter: {} })
+    expect(rows[0].tagIds).toEqual([])
   })
 })
