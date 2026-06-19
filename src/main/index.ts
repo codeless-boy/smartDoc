@@ -6,8 +6,12 @@ import { getConfig, setConfig } from '@main/config'
 import { openDatabase } from '@main/database'
 import { FileRepo } from '@main/repo/file-repo'
 import { FileService } from '@main/services/file-service'
+import { TagService } from '@main/services/tag-service'
+import { SearchService } from '@main/services/search-service'
 import { registerFileIpc } from '@main/ipc/file-ipc'
 import { registerConfigIpc } from '@main/ipc/config-ipc'
+import { registerTagIpc } from '@main/ipc/tag-ipc'
+import { registerSearchIpc } from '@main/ipc/search-ipc'
 
 let mainWindow: BrowserWindow | null = null
 let svc: FileService | null = null
@@ -46,9 +50,13 @@ async function bootstrap(): Promise<void> {
   const db = openDatabase(dbPath)
   const repo = new FileRepo(repoRoot)
   svc = new FileService(db, repo)
+  const tagSvc = new TagService(db)
+  const searchSvc = new SearchService(db)
 
   registerConfigIpc()
   registerFileIpc(svc, () => repoRootRef)
+  registerTagIpc(tagSvc)
+  registerSearchIpc(searchSvc)
 }
 
 function createWindow(): void {

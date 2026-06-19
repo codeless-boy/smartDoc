@@ -29,16 +29,22 @@ export function registerFileIpc(svc: FileService, repoRoot: () => string | null)
   })
 
   ipcMain.handle(IPC.FileOpen, async (_e, id: string): Promise<void> => {
-    const file = svc.list({}).find((f) => f.id === id)
+    const file = svc.list({ filter: {} }).find((f) => f.id === id)
     const root = repoRoot()
     if (!file || !root) return
     const abs = path.join(root, file.storagePath)
     const err = await shell.openPath(abs)
-    if (err) logger.warn('shell.openPath failed', abs, err)
+    if (err) {
+      logger.warn('shell.openPath failed', abs, err)
+      return
+    }
+    svc.logOpen(id)
   })
 
+  ipcMain.handle(IPC.FileOpenLog, (_e, id: string): void => svc.logOpen(id))
+
   ipcMain.handle(IPC.FileShowInDir, async (_e, id: string): Promise<void> => {
-    const file = svc.list({}).find((f) => f.id === id)
+    const file = svc.list({ filter: {} }).find((f) => f.id === id)
     const root = repoRoot()
     if (!file || !root) return
     shell.showItemInFolder(path.join(root, file.storagePath))
