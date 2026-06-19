@@ -3,9 +3,12 @@ import { IPC } from '@shared/ipc-channels'
 import type {
   AppConfig,
   FileInfo,
+  FileWithTags,
   ImportRequest,
   ImportItemStatus,
-  ListQuery
+  ListQuery,
+  SearchSuggestion,
+  TagInfo
 } from '@shared/types'
 
 const api = {
@@ -17,16 +20,33 @@ const api = {
   file: {
     import: (req: ImportRequest): Promise<ImportItemStatus> =>
       ipcRenderer.invoke(IPC.FileImport, req),
-    list: (query: ListQuery = {}): Promise<FileInfo[]> =>
+    list: (query: ListQuery = {}): Promise<FileWithTags[]> =>
       ipcRenderer.invoke(IPC.FileList, query),
     delete: (ids: string[]): Promise<void> =>
       ipcRenderer.invoke(IPC.FileDelete, ids),
     open: (id: string): Promise<void> => ipcRenderer.invoke(IPC.FileOpen, id),
     showInDir: (id: string): Promise<void> =>
-      ipcRenderer.invoke(IPC.FileShowInDir, id)
+      ipcRenderer.invoke(IPC.FileShowInDir, id),
+    openLog: (id: string): Promise<void> => ipcRenderer.invoke(IPC.FileOpenLog, id)
   },
   dialog: {
     pickFiles: (): Promise<string[]> => ipcRenderer.invoke(IPC.DialogPickFiles)
+  },
+  tag: {
+    list: (): Promise<TagInfo[]> => ipcRenderer.invoke(IPC.TagList),
+    create: (input: { name: string; color?: string }): Promise<TagInfo> =>
+      ipcRenderer.invoke(IPC.TagCreate, input),
+    update: (
+      id: string,
+      fields: { name?: string; color?: string }
+    ): Promise<TagInfo> => ipcRenderer.invoke(IPC.TagUpdate, id, fields),
+    delete: (id: string): Promise<void> => ipcRenderer.invoke(IPC.TagDelete, id),
+    setOnFile: (fileId: string, tagIds: string[]): Promise<void> =>
+      ipcRenderer.invoke(IPC.TagSetOnFile, fileId, tagIds)
+  },
+  search: {
+    suggest: (prefix: string): Promise<SearchSuggestion[]> =>
+      ipcRenderer.invoke(IPC.SearchSuggest, prefix)
   }
 }
 
