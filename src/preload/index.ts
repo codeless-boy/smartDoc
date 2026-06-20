@@ -8,7 +8,8 @@ import type {
   ImportItemStatus,
   ListQuery,
   SearchSuggestion,
-  TagInfo
+  TagInfo,
+  UpdateState
 } from '@shared/types'
 
 const api = {
@@ -53,6 +54,18 @@ const api = {
   search: {
     suggest: (prefix: string): Promise<SearchSuggestion[]> =>
       ipcRenderer.invoke(IPC.SearchSuggest, prefix)
+  },
+  updater: {
+    getState: (): Promise<UpdateState> => ipcRenderer.invoke(IPC.UpdaterGetState),
+    check: (): Promise<void> => ipcRenderer.invoke(IPC.UpdaterCheck),
+    quitAndInstall: (): Promise<void> =>
+      ipcRenderer.invoke(IPC.UpdaterQuitAndInstall),
+    onState: (cb: (s: UpdateState) => void): (() => void) => {
+      const handler = (_e: unknown, s: UpdateState): void => cb(s)
+      ipcRenderer.on('updater:state', handler)
+      void ipcRenderer.invoke(IPC.UpdaterSubscribe)
+      return () => ipcRenderer.removeListener('updater:state', handler)
+    }
   }
 }
 

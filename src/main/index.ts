@@ -12,10 +12,13 @@ import { registerFileIpc } from '@main/ipc/file-ipc'
 import { registerConfigIpc } from '@main/ipc/config-ipc'
 import { registerTagIpc } from '@main/ipc/tag-ipc'
 import { registerSearchIpc } from '@main/ipc/search-ipc'
+import { UpdaterService } from '@main/services/updater-service'
+import { registerUpdaterIpc } from '@main/ipc/updater-ipc'
 
 let mainWindow: BrowserWindow | null = null
 let svc: FileService | null = null
 let repoRootRef: string | null = null
+let updater: UpdaterService | null = null
 
 async function bootstrap(): Promise<void> {
   initLogger()
@@ -47,6 +50,9 @@ async function bootstrap(): Promise<void> {
   registerFileIpc(svc, () => repoRootRef)
   registerTagIpc(tagSvc)
   registerSearchIpc(searchSvc)
+
+  updater = new UpdaterService()
+  registerUpdaterIpc(updater)
 }
 
 function createWindow(): void {
@@ -87,6 +93,7 @@ app.whenReady().then(async () => {
   try {
     await bootstrap()
     createWindow()
+    if (updater) updater.init(() => mainWindow)
   } catch (err) {
     logger.error('bootstrap failed', err)
     app.quit()

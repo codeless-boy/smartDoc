@@ -17,7 +17,11 @@ export const IPC = {
   TagUpdate: 'tag:update',
   TagSetOnFile: 'tag:setOnFile',
   SearchSuggest: 'search:suggest',
-  FileOpenLog: 'file:openLog'
+  FileOpenLog: 'file:openLog',
+  UpdaterGetState: 'updater:getState',
+  UpdaterSubscribe: 'updater:subscribe',
+  UpdaterCheck: 'updater:check',
+  UpdaterQuitAndInstall: 'updater:quitAndInstall'
 } as const
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC]
