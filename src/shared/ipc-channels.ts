@@ -10,6 +10,7 @@ export const IPC = {
   FileUpdate: 'file:update',
   FileExistsOnDisk: 'file:existsOnDisk',
   DialogPickFiles: 'dialog:pickFiles',
+  DialogPickDirectory: 'dialog:pickDirectory',
   TagList: 'tag:list',
   TagCreate: 'tag:create',
   TagDelete: 'tag:delete',

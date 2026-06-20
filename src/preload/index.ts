@@ -34,7 +34,9 @@ const api = {
       ipcRenderer.invoke(IPC.FileExistsOnDisk, id)
   },
   dialog: {
-    pickFiles: (): Promise<string[]> => ipcRenderer.invoke(IPC.DialogPickFiles)
+    pickFiles: (): Promise<string[]> => ipcRenderer.invoke(IPC.DialogPickFiles),
+    pickDirectory: (): Promise<string | null> =>
+      ipcRenderer.invoke(IPC.DialogPickDirectory)
   },
   tag: {
     list: (): Promise<TagInfo[]> => ipcRenderer.invoke(IPC.TagList),

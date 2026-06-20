@@ -13,7 +13,12 @@ import path from 'node:path'
  *  - 复制使用先写临时文件再 rename 的两步法，保证原子性。
  */
 export class FileRepo {
-  constructor(private readonly root: string) {}
+  constructor(private root: string) {}
+
+  /** 渲染端引导页选择目录后重新指向新根目录 */
+  setRoot(root: string): void {
+    this.root = root
+  }
 
   /** 仓库内 files/ 子目录绝对路径 */
   filesDir(): string {
