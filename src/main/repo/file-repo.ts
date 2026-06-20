@@ -63,18 +63,24 @@ export class FileRepo {
     }
 
     const tmp = `${dest}.tmp-${process.pid}`
-    if (opts.onProgress && opts.totalBytes) {
-      const reader = createReadStream(opts.sourcePath)
-      let copied = 0
-      reader.on('data', (chunk) => {
-        copied += chunk.length
-        opts.onProgress!(copied, opts.totalBytes!)
-      })
-      await pipeline(reader, createWriteStream(tmp))
-    } else {
-      await fs.copyFile(opts.sourcePath, tmp)
+    try {
+      if (opts.onProgress && opts.totalBytes) {
+        const reader = createReadStream(opts.sourcePath)
+        let copied = 0
+        reader.on('data', (chunk) => {
+          copied += chunk.length
+          opts.onProgress!(copied, opts.totalBytes!)
+        })
+        await pipeline(reader, createWriteStream(tmp))
+      } else {
+        await fs.copyFile(opts.sourcePath, tmp)
+      }
+      await fs.rename(tmp, dest)
+    } catch (err) {
+      // 复制或 rename 失败时清理残留的 .tmp 文件，避免大文件场景下堆积 GB 级垃圾
+      await fs.rm(tmp, { force: true })
+      throw err
     }
-    await fs.rename(tmp, dest)
     return this.storagePath(opts.uuid, opts.name)
   }
 
