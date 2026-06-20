@@ -27,9 +27,9 @@
     "typecheck": "npm run typecheck:node && npm run typecheck:web",
     "lint": "eslint . --ext .ts,.tsx",
     "format": "prettier --write .",
-    "package:dir": "electron-vite build && electron-builder --dir",
-    "package": "electron-vite build && electron-builder --win",
-    "publish": "electron-vite build && electron-builder --win --publish always",
+    "package:dir": "electron-vite build && node scripts/package.mjs --dir",
+    "package": "electron-vite build && node scripts/package.mjs --win",
+    "publish": "electron-vite build && node scripts/package.mjs --win --publish always",
     "postinstall": "electron-builder install-app-deps"
   },
   "dependencies": {
