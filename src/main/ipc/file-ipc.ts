@@ -1,4 +1,4 @@
-import { ipcMain, shell, BrowserWindow, dialog } from 'electron'
+import { ipcMain, shell, BrowserWindow, dialog, webContents } from 'electron'
 import path from 'node:path'
 import { IPC } from '@shared/ipc-channels'
 import type {
@@ -66,6 +66,20 @@ export function registerFileIpc(svc: FileService, repoRoot: () => string | null)
     return r.canceled ? [] : r.filePaths
   })
 
+  ipcMain.handle(IPC.DialogPickDirectory, async (): Promise<string | null> => {
+    const r = await dialog.showOpenDialog({
+      properties: ['openDirectory', 'createDirectory']
+    })
+    return r.canceled || r.filePaths.length === 0 ? null : r.filePaths[0]
+  })
+
   // 让窗口在 ready 时把当前列表广播给 renderer（可选；Part 1 渲染端用主动 fetch）
   void BrowserWindow
+
+  // 大文件导入进度：把 service 的进度回调广播给所有渲染端
+  svc.setProgressEmitter((p) => {
+    for (const wc of webContents.getAllWebContents()) {
+      wc.send(IPC.FileImportProgress, p)
+    }
+  })
 }

@@ -1,0 +1,42 @@
+appId: com.smartdoc.app
+productName: smartDoc
+copyright: Copyright © ${author}
+
+# 仅打包构建产物，源码与 dev 文件排除
+files:
+  - out/**/*
+  - package.json
+
+# better-sqlite3 是 native 模块，不能进 asar
+asar: true
+asarUnpack:
+  - node_modules/better-sqlite3/**/*
+
+directories:
+  buildResources: build
+  output: release/${version}
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+  artifactName: ${productName}-${version}-setup.${ext}
+
+nsis:
+  oneClick: false                    # 显示安装向导（用户可选目录）
+  perMachine: false                  # 默认按用户安装；勾选后可改 perMachine
+  allowToChangeInstallationDirectory: true
+  allowElevation: true
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: smartDoc
+  uninstallDisplayName: smartDoc ${version}
+
+# 自动更新发布通道
+publish:
+  provider: github
+  owner: smartdoc-app                # 与 package.json.repository.url 保持一致
+  repo: smartDoc
+  releaseType: release

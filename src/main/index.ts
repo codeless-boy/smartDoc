@@ -1,4 +1,4 @@
-import { app, BrowserWindow, dialog } from 'electron'
+import { app, BrowserWindow } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import { initLogger, logger } from '@main/logger'
@@ -12,51 +12,47 @@ import { registerFileIpc } from '@main/ipc/file-ipc'
 import { registerConfigIpc } from '@main/ipc/config-ipc'
 import { registerTagIpc } from '@main/ipc/tag-ipc'
 import { registerSearchIpc } from '@main/ipc/search-ipc'
+import { UpdaterService } from '@main/services/updater-service'
+import { registerUpdaterIpc } from '@main/ipc/updater-ipc'
 
 let mainWindow: BrowserWindow | null = null
 let svc: FileService | null = null
 let repoRootRef: string | null = null
-
-/**
- * 首次启动若未配置 repoPath，引导用户选择目录。
- * Part 1 阶段直接弹窗；Part 2 起改为渲染端的引导页。
- */
-async function ensureRepoPath(): Promise<string> {
-  const existing = getConfig('repoPath')
-  if (existing && fs.existsSync(existing)) return existing
-
-  const result = await dialog.showOpenDialog({
-    title: '选择 smartDoc 仓库目录',
-    properties: ['openDirectory', 'createDirectory']
-  })
-  if (result.canceled || result.filePaths.length === 0) {
-    app.quit()
-    throw new Error('user-cancelled-repo-path')
-  }
-  const chosen = result.filePaths[0]
-  setConfig('repoPath', chosen)
-  return chosen
-}
+let updater: UpdaterService | null = null
 
 async function bootstrap(): Promise<void> {
   initLogger()
   logger.info('smartDoc starting, version', app.getVersion())
 
-  const repoRoot = await ensureRepoPath()
-  repoRootRef = repoRoot
-  fs.mkdirSync(path.join(repoRoot, 'files'), { recursive: true })
-
   const dbPath = path.join(app.getPath('userData'), 'smartdoc.db')
   const db = openDatabase(dbPath)
-  const repo = new FileRepo(repoRoot)
+  // repoPath may be null on first run; FileRepo starts against a pending path
+  // and gets retargeted via config:set → onRepoPathChanged when the renderer
+  // guide picks a directory.
+  const configuredRepo = getConfig('repoPath')
+  const repo = new FileRepo(
+    configuredRepo ?? path.join(app.getPath('userData'), 'pending-repo')
+  )
+  if (configuredRepo) {
+    fs.mkdirSync(path.join(configuredRepo, 'files'), { recursive: true })
+  }
+  repoRootRef = configuredRepo
   svc = new FileService(db, repo)
   const tagSvc = new TagService(db)
   const searchSvc = new SearchService(db)
 
-  registerConfigIpc()
+  registerConfigIpc({
+    onRepoPathChanged: (p) => {
+      repo.setRoot(p)
+      repoRootRef = p
+    }
+  })
   registerFileIpc(svc, () => repoRootRef)
   registerTagIpc(tagSvc)
   registerSearchIpc(searchSvc)
+
+  updater = new UpdaterService()
+  registerUpdaterIpc(updater)
 }
 
 function createWindow(): void {
@@ -97,6 +93,7 @@ app.whenReady().then(async () => {
   try {
     await bootstrap()
     createWindow()
+    if (updater) updater.init(() => mainWindow)
   } catch (err) {
     logger.error('bootstrap failed', err)
     app.quit()
