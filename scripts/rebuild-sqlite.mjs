@@ -55,13 +55,27 @@ if (!fs.existsSync(tarball)) {
 const dest = path.join('node_modules', 'better-sqlite3')
 // Ensure the destination dir exists (cleared by an earlier rebuild step)
 fs.mkdirSync(dest, { recursive: true })
-// tar -xzf into the better-sqlite3 module dir; the tarball contains build/Release/better_sqlite3.node
-// Use --force-local because GNU tar on Git Bash treats `C:\...` as a remote spec.
-// Use forward-slash paths so GNU tar doesn't choke on Windows backslashes either.
-const toPosix = (p) => p.replace(/\\/g, '/')
-execFileSync(
-  'tar',
-  ['--force-local', '-xzf', toPosix(tarball), '-C', toPosix(dest)],
-  { stdio: 'inherit' }
-)
+// Extract the tarball into the better-sqlite3 module dir. The tarball layout
+// is build/Release/better_sqlite3.node.
+//
+// The cached tarball lives under %LOCALAPPDATA% (often a different drive than
+// the project). Two tar implementations coexist on Windows and disagree on
+// drive-letter args:
+//   - GNU tar (Git Bash) treats `C:\...` as a remote host spec (needs --force-local)
+//   - bsdtar (System32\tar.exe) rejects --force-local outright
+// To stay compatible with BOTH, copy the tarball into the dest dir (same drive
+// as the project, no drive letter), extract by bare filename via cwd, then
+// remove the copy. No `C:\` ever reaches tar's argv.
+const copyName = '.rebuild-source.tar.gz'
+const localCopy = path.join(dest, copyName)
+fs.copyFileSync(tarball, localCopy)
+try {
+  execFileSync('tar', ['-xzf', copyName], {
+    stdio: 'inherit',
+    cwd: dest,
+    shell: false
+  })
+} finally {
+  fs.rmSync(localCopy, { force: true })
+}
 console.log(`Swapped better-sqlite3 native binary to ${runtime} ABI (${abi}).`)
