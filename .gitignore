@@ -1,5 +1,13 @@
 node_modules/
-repo/
+out/
 dist/
+release/
+*.log
+.DS_Store
+.vscode/settings.json
+.idea/
+coverage/
+.env
+.env.local
+*.tsbuildinfo
 .superpowers/
-package-lock.json
