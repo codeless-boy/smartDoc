@@ -9,6 +9,7 @@ import { FileDrawer } from './FileDrawer'
 import { DropZone } from './DropZone'
 import { DuplicateDialog } from './DuplicateDialog'
 import { FirstRunGuide } from './FirstRunGuide'
+import { UpdateNotifier } from './UpdateNotifier'
 
 export function AppShell(): JSX.Element {
   useFiles()
@@ -66,6 +67,7 @@ export function AppShell(): JSX.Element {
           }}
         />
       )}
+      <UpdateNotifier />
     </Layout>
   )
 }
