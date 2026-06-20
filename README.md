@@ -91,4 +91,4 @@ git push origin main --tags
 
 - [x] Part 1：脚手架、主进程基础设施、最小占位 UI
 - [x] Part 2：完整 UI（antd 布局、标签、搜索、详情抽屉、Playwright E2E）
-- [ ] Part 3：electron-builder 打包 + electron-updater 自动更新
+- [x] Part 3：electron-builder 打包 + electron-updater 自动更新
