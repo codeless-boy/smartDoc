@@ -71,6 +71,22 @@ npm run publish       # 同 package，并上传到 GitHub Release（需 GH_TOKEN
 
 > 日志位于 `%APPDATA%/smartDoc/logs/main.log`，可看到 `updater state` 的 phase 切换（checking → available → downloading → downloaded）。
 
+### 发布新版本（CI）
+
+推送 `v*` 标签即触发 `.github/workflows/release.yml`：GitHub Actions 在 windows-latest 上 `npm ci` → typecheck → 单测 → `npm run publish`（electron-builder 用 `GH_TOKEN` 创建/更新 GitHub Release 并上传 setup.exe + latest.yml + blockmap）。
+
+```bash
+# 1. 升版本号
+#    package.json version → 0.1.1
+git commit -am "chore: bump 0.1.1"
+# 2. 打标签并推送
+git tag v0.1.1
+git push origin main --tags
+# 3. CI 构建并发布；已安装的旧版本启动 5 秒后自动检测到新版本
+```
+
+> CI 环境网络通畅，`scripts/package.mjs` 注入的 npmmirror 镜像与 winCodeSign 预解压在 CI 上是冗余但无害的（确保本地与 CI 行为一致）。
+
 ## 当前进度
 
 - [x] Part 1：脚手架、主进程基础设施、最小占位 UI
