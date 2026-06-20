@@ -1,4 +1,4 @@
-import { ipcMain, shell, BrowserWindow, dialog } from 'electron'
+import { ipcMain, shell, BrowserWindow, dialog, webContents } from 'electron'
 import path from 'node:path'
 import { IPC } from '@shared/ipc-channels'
 import type {
@@ -75,4 +75,11 @@ export function registerFileIpc(svc: FileService, repoRoot: () => string | null)
 
   // 让窗口在 ready 时把当前列表广播给 renderer（可选；Part 1 渲染端用主动 fetch）
   void BrowserWindow
+
+  // 大文件导入进度：把 service 的进度回调广播给所有渲染端
+  svc.setProgressEmitter((p) => {
+    for (const wc of webContents.getAllWebContents()) {
+      wc.send(IPC.FileImportProgress, p)
+    }
+  })
 }

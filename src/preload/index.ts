@@ -32,7 +32,17 @@ const api = {
     update: (id: string, fields: { note?: string }): Promise<FileInfo | null> =>
       ipcRenderer.invoke(IPC.FileUpdate, id, fields),
     existsOnDisk: (id: string): Promise<boolean> =>
-      ipcRenderer.invoke(IPC.FileExistsOnDisk, id)
+      ipcRenderer.invoke(IPC.FileExistsOnDisk, id),
+    onImportProgress: (
+      cb: (p: { sourcePath: string; copied: number; total: number }) => void
+    ): (() => void) => {
+      const handler = (
+        _e: unknown,
+        p: { sourcePath: string; copied: number; total: number }
+      ): void => cb(p)
+      ipcRenderer.on(IPC.FileImportProgress, handler)
+      return () => ipcRenderer.removeListener(IPC.FileImportProgress, handler)
+    }
   },
   dialog: {
     pickFiles: (): Promise<string[]> => ipcRenderer.invoke(IPC.DialogPickFiles),

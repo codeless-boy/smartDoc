@@ -3,6 +3,7 @@ export const IPC = {
   ConfigGet: 'config:get',
   ConfigSet: 'config:set',
   FileImport: 'file:import',
+  FileImportProgress: 'file:importProgress',
   FileList: 'file:list',
   FileDelete: 'file:delete',
   FileOpen: 'file:open',

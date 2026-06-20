@@ -13,6 +13,9 @@ import { FileRepo } from '@main/repo/file-repo'
 import { findDuplicateByName } from '@main/repo/duplicate'
 import { nextSequenceName } from '@main/repo/sequence-name'
 
+/** 文件大于此阈值时，导入过程会推送字节进度（设计文档第 6 节）。 */
+const LARGE_FILE_THRESHOLD = 500 * 1024 * 1024
+
 interface FileRow {
   id: string
   name: string
@@ -40,6 +43,16 @@ export class FileService {
     private readonly db: Database,
     private readonly repo: FileRepo
   ) {}
+
+  private progressEmit:
+    | ((p: { sourcePath: string; copied: number; total: number }) => void)
+    | null = null
+
+  setProgressEmitter(
+    fn: (p: { sourcePath: string; copied: number; total: number }) => void
+  ): void {
+    this.progressEmit = fn
+  }
 
   list(query: ListQuery): FileWithTags[] {
     const filter = query.filter ?? {}
@@ -177,10 +190,16 @@ export class FileService {
       }
 
       const uuid = uuidv4()
+      const useProgress = stat.size > LARGE_FILE_THRESHOLD && this.progressEmit !== null
       const storagePath = await this.repo.ingest({
         uuid,
         sourcePath: req.sourcePath,
-        name: finalName
+        name: finalName,
+        totalBytes: useProgress ? stat.size : undefined,
+        onProgress: useProgress
+          ? (copied, total) =>
+              this.progressEmit!({ sourcePath: req.sourcePath, copied, total })
+          : undefined
       })
       const ext = (path.extname(finalName).slice(1) || '').toLowerCase()
       this.db

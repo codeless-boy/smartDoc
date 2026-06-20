@@ -1,4 +1,6 @@
 import fs from 'node:fs/promises'
+import { createReadStream, createWriteStream } from 'node:fs'
+import { pipeline } from 'node:stream/promises'
 import path from 'node:path'
 
 /**
@@ -38,12 +40,17 @@ export class FileRepo {
   /**
    * 把 source 复制到 files/<uuid>/<name>。返回相对仓库根的 storage_path。
    * 若目标目录已存在，按 overwrite=true 时清空后再写。
+   *
+   * 当传入 onProgress 与 totalBytes 时，改用流式拷贝并按 chunk 上报字节进度，
+   * 适用于 >500MB 的大文件导入；否则走 fs.copyFile 快速路径。
    */
   async ingest(opts: {
     uuid: string
     sourcePath: string
     name: string
     overwrite?: boolean
+    onProgress?: (copiedBytes: number, totalBytes: number) => void
+    totalBytes?: number
   }): Promise<string> {
     const dir = path.join(this.filesDir(), opts.uuid)
     const dest = path.join(dir, opts.name)
@@ -56,7 +63,17 @@ export class FileRepo {
     }
 
     const tmp = `${dest}.tmp-${process.pid}`
-    await fs.copyFile(opts.sourcePath, tmp)
+    if (opts.onProgress && opts.totalBytes) {
+      const reader = createReadStream(opts.sourcePath)
+      let copied = 0
+      reader.on('data', (chunk) => {
+        copied += chunk.length
+        opts.onProgress!(copied, opts.totalBytes!)
+      })
+      await pipeline(reader, createWriteStream(tmp))
+    } else {
+      await fs.copyFile(opts.sourcePath, tmp)
+    }
     await fs.rename(tmp, dest)
     return this.storagePath(opts.uuid, opts.name)
   }

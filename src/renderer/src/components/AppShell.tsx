@@ -10,6 +10,7 @@ import { DropZone } from './DropZone'
 import { DuplicateDialog } from './DuplicateDialog'
 import { FirstRunGuide } from './FirstRunGuide'
 import { UpdateNotifier } from './UpdateNotifier'
+import { ImportProgress } from './ImportProgress'
 
 export function AppShell(): JSX.Element {
   useFiles()
@@ -68,6 +69,7 @@ export function AppShell(): JSX.Element {
         />
       )}
       <UpdateNotifier />
+      <ImportProgress />
     </Layout>
   )
 }
