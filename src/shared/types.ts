@@ -72,3 +72,12 @@ export interface SearchSuggestion {
 export interface FileWithTags extends FileInfo {
   tagIds: string[]
 }
+
+export type UpdateState =
+  | { phase: 'idle' }
+  | { phase: 'checking' }
+  | { phase: 'available'; version: string }
+  | { phase: 'not-available' }
+  | { phase: 'downloading'; percent: number; bytesPerSecond: number }
+  | { phase: 'downloaded'; version: string }
+  | { phase: 'error'; message: string }
