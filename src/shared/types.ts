@@ -37,9 +37,7 @@ export type ImportItemStatus =
   | { status: 'error'; sourcePath: string; message: string }
 
 export interface ListQuery {
-  /** 关键词（搜索 Part 2 启用），Part 1 仅支持 undefined */
-  keyword?: string
-  /** 分页（Part 2 启用） */
+  filter?: FileFilter
   limit?: number
   offset?: number
 }
@@ -47,4 +45,30 @@ export interface ListQuery {
 export interface AppConfig {
   repoPath: string | null
   windowBounds?: { x?: number; y?: number; width: number; height: number }
+}
+
+export interface FileFilter {
+  /** 文件名/备注/标签关键词；为空表示无关键词过滤 */
+  keyword?: string
+  /** 选中的标签 id 列表，命中需同时拥有所有这些标签（AND） */
+  tagIds?: string[]
+  /** 限定文件扩展名（小写，无点） */
+  exts?: string[]
+  /** 仅未打标签的文件 */
+  untagged?: boolean
+  /** 仅最常打开的前 N（基于 file_opens） */
+  topOpenedLimit?: number
+}
+
+export interface SearchSuggestion {
+  /** 'file' | 'tag' */
+  kind: 'file' | 'tag'
+  text: string
+  /** 关联的 id（file id 或 tag id） */
+  id: string
+}
+
+/** 详细描述每条文件附带的标签 id，避免 N+1 查询 */
+export interface FileWithTags extends FileInfo {
+  tagIds: string[]
 }
