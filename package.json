@@ -13,7 +13,7 @@
     "url": "https://github.com/smartdoc-app/smartDoc.git"
   },
   "scripts": {
-    "dev": "electron-vite dev",
+    "dev": "node scripts/dev.mjs",
     "build": "electron-vite build",
     "start": "electron-vite preview",
     "test": "vitest",
