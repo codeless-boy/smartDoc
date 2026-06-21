@@ -31,7 +31,7 @@ npm run publish       # 同 package，并上传到 GitHub Release（需 GH_TOKEN
 
 `scripts/package.mjs` 会自动注入 npmmirror 镜像（ELECTRON_MIRROR / ELECTRON_BUILDER_BINARIES_MIRROR）并预解压 winCodeSign 缓存（绕过本机无符号链接权限导致的 7za 解压失败），无需手动设置环境变量。
 
-> **GitHub owner**：`electron-builder.yml` 的 `publish.owner` 当前是占位 `smartdoc-app`。真实发布前替换为实际 owner。
+> **GitHub owner**：`electron-builder.yml` 的 `publish.owner` 与 `package.json` 的 `repository.url` 指向 `codeless-boy/smartDoc`。如迁移仓库请同步更新这两处。
 
 ### 本地自动更新冒烟
 

@@ -37,6 +37,6 @@ nsis:
 # 自动更新发布通道
 publish:
   provider: github
-  owner: smartdoc-app                # 与 package.json.repository.url 保持一致
+  owner: codeless-boy                # 与 package.json.repository.url 保持一致
   repo: smartDoc
   releaseType: release
