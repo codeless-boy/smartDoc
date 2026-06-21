@@ -1,0 +1,22 @@
+# 强制所有文本文件以 LF 入库与检出，消除 Windows/CI 行尾差异。
+# 之前 core.autocrlf=true 导致本地 CRLF / 仓库 LF 混杂，CI 上 prettier
+# format:check 与本地结果不一致。.gitattributes 优先级高于 autocrlf。
+* text=auto eol=lf
+
+# 二进制文件不做行尾转换
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.icns binary
+*.node binary
+*.zip binary
+*.7z binary
+*.gz binary
+*.exe binary
+*.dll binary
+*.lib binary
+*.so binary
+*.dylib binary
+*.wasm binary
