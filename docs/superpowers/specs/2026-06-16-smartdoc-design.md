@@ -133,7 +133,7 @@ CREATE INDEX idx_file_opens_time ON file_opens(opened_at);
 ### 右侧详情
 
 - 仅在单击文件后出现（非始终可见）
-- 内容：标签编辑（已有标签可 ✕ 移除、+ 添加新标签）、备注编辑、文件基本信息（大小、导入时间、路径、MD5）、"打开文件"和"定位文件"按钮
+- 内容：标签编辑（已有标签可 ✕ 移除、+ 添加新标签）、备注编辑、文件基本信息（大小、导入时间、路径、MD5）、"打开文件"按钮
 
 ---
 
@@ -147,8 +147,7 @@ Main Process 通过 IPC 暴露以下接口，请求-响应模式：
   file:delete     (ids: string[])    → void
   file:update     (id, fields)       → FileInfo
   file:list       (query)            → FileInfo[]
-  file:open       (id)               → void  (shell.openPath)
-  file:showInDir  (id)               → void  (shell.showItemInFolder)
+  file:open       (id)               → void  (shell.openPath，系统默认程序打开)
 
 标签操作:
   tag:list        ()                 → TagInfo[]

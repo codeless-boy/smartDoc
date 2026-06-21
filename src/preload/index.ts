@@ -26,8 +26,6 @@ const api = {
     delete: (ids: string[]): Promise<void> =>
       ipcRenderer.invoke(IPC.FileDelete, ids),
     open: (id: string): Promise<void> => ipcRenderer.invoke(IPC.FileOpen, id),
-    showInDir: (id: string): Promise<void> =>
-      ipcRenderer.invoke(IPC.FileShowInDir, id),
     openLog: (id: string): Promise<void> => ipcRenderer.invoke(IPC.FileOpenLog, id),
     update: (id: string, fields: { note?: string }): Promise<FileInfo | null> =>
       ipcRenderer.invoke(IPC.FileUpdate, id, fields),

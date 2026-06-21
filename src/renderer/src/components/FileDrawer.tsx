@@ -9,7 +9,7 @@ import {
   Typography,
   message
 } from 'antd'
-import { FolderOpenOutlined, DeleteOutlined } from '@ant-design/icons'
+import { FileOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { FileWithTags, TagInfo } from '@shared/types'
 import { useAppStore } from '@renderer/store/app-store'
 import { refreshAll } from '@renderer/api/use-files'
@@ -109,10 +109,10 @@ export function FileDrawer(): JSX.Element {
 
         <Space>
           <Button
-            icon={<FolderOpenOutlined />}
-            onClick={() => window.api.file.showInDir(file.id)}
+            icon={<FileOutlined />}
+            onClick={() => window.api.file.open(file.id)}
           >
-            定位文件
+            打开文件
           </Button>
           <Button
             danger
