@@ -29,8 +29,7 @@
     "format": "prettier --write .",
     "package:dir": "electron-vite build && node scripts/package.mjs --dir",
     "package": "electron-vite build && node scripts/package.mjs --win",
-    "publish": "electron-vite build && node scripts/package.mjs --win --publish always",
-    "postinstall": "electron-builder install-app-deps"
+    "publish": "electron-vite build && node scripts/package.mjs --win --publish always"
   },
   "dependencies": {
     "@ant-design/icons": "^5.4.0",
