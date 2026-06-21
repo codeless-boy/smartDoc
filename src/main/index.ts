@@ -75,7 +75,12 @@ function createWindow(): void {
   mainWindow.on('close', () => {
     if (!mainWindow) return
     const b = mainWindow.getBounds()
-    setConfig('windowBounds', { x: b.x, y: b.y, width: b.width, height: b.height })
+    setConfig('windowBounds', {
+      x: b.x,
+      y: b.y,
+      width: b.width,
+      height: b.height
+    })
   })
 
   if (process.env['ELECTRON_RENDERER_URL']) {

@@ -9,15 +9,19 @@ test.describe('tags and search', () => {
     await app.evaluate(
       async ({ dialog }, [pa, pb, pc]) => {
         dialog.showOpenDialog = async () =>
-          ({ canceled: false, filePaths: [pa, pb, pc] } as any)
+          ({ canceled: false, filePaths: [pa, pb, pc] }) as any
       },
       [a, b, c]
     )
     await page.getByRole('button', { name: '导入文件' }).click()
-    await expect(page.getByTestId('file-table').getByText('Report.pdf')).toBeVisible()
+    await expect(
+      page.getByTestId('file-table').getByText('Report.pdf')
+    ).toBeVisible()
   })
 
-  test('add tag via drawer; click in side panel to filter', async ({ page }) => {
+  test('add tag via drawer; click in side panel to filter', async ({
+    page
+  }) => {
     // 点 Report.pdf 行 → 抽屉
     await page.getByTestId('file-table').getByText('Report.pdf').click()
     const drawer = page.getByTestId('file-drawer')

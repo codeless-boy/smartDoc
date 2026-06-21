@@ -7,7 +7,10 @@ import path from 'node:path'
 
 const SIZE = 256
 // smartDoc brand indigo (#6366f1) as RGBA
-const R = 0x63, G = 0x66, B = 0xf1, A = 0xff
+const R = 0x63,
+  G = 0x66,
+  B = 0xf1,
+  A = 0xff
 
 // --- Build raw RGBA scanlines (each row prefixed with filter byte 0) ---
 const rowLen = 1 + SIZE * 4
@@ -46,7 +49,8 @@ const CRC_TABLE = (() => {
 })()
 function crc32(buf) {
   let c = 0xffffffff
-  for (let i = 0; i < buf.length; i++) c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8)
+  for (let i = 0; i < buf.length; i++)
+    c = CRC_TABLE[(c ^ buf[i]) & 0xff] ^ (c >>> 8)
   return (c ^ 0xffffffff) >>> 0
 }
 

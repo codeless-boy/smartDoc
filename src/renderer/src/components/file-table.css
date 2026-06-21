@@ -1,3 +1,9 @@
-.row-even { background-color: #fafafa; }
-.row-odd  { background-color: #ffffff; }
-.row-selected { background-color: #e6f4ff !important; }
+.row-even {
+  background-color: #fafafa;
+}
+.row-odd {
+  background-color: #ffffff;
+}
+.row-selected {
+  background-color: #e6f4ff !important;
+}

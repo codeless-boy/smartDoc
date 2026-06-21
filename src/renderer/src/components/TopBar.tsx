@@ -12,7 +12,9 @@ export function TopBar(): JSX.Element {
   const [options, setOptions] = useState<{ value: string; label: string }[]>([])
   const [dup, setDup] = useState<{
     sourcePath: string
-    existing: SearchSuggestion extends never ? never : import('@shared/types').FileInfo
+    existing: SearchSuggestion extends never
+      ? never
+      : import('@shared/types').FileInfo
   } | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -47,22 +49,25 @@ export function TopBar(): JSX.Element {
 
   async function handleImport(paths: string[]): Promise<void> {
     for (const p of paths) {
-      let result: ImportItemStatus = await window.api.file.import({ sourcePath: p })
+      let result: ImportItemStatus = await window.api.file.import({
+        sourcePath: p
+      })
       if (result.status === 'duplicate') {
         const action = await new Promise<'skip' | 'overwrite' | 'keep-both'>(
           (resolve) => {
             setDup({
               sourcePath: result.status === 'duplicate' ? result.sourcePath : p,
               existing:
-                result.status === 'duplicate'
-                  ? result.existing
-                  : ({} as never)
+                result.status === 'duplicate' ? result.existing : ({} as never)
             })
             ;(window as any).__smartdoc_dupResolver = resolve
           }
         )
         setDup(null)
-        result = await window.api.file.import({ sourcePath: p, duplicateAction: action })
+        result = await window.api.file.import({
+          sourcePath: p,
+          duplicateAction: action
+        })
       }
     }
     await refreshAll()
@@ -88,11 +93,7 @@ export function TopBar(): JSX.Element {
           allowClear
         />
       </AutoComplete>
-      <Button
-        type="primary"
-        icon={<ImportOutlined />}
-        onClick={pickAndImport}
-      >
+      <Button type="primary" icon={<ImportOutlined />} onClick={pickAndImport}>
         导入文件
       </Button>
       {dup && (

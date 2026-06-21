@@ -15,8 +15,10 @@ import type {
 const api = {
   config: {
     getAll: (): Promise<AppConfig> => ipcRenderer.invoke(IPC.ConfigGet),
-    set: <K extends keyof AppConfig>(key: K, value: AppConfig[K]): Promise<void> =>
-      ipcRenderer.invoke(IPC.ConfigSet, key, value)
+    set: <K extends keyof AppConfig>(
+      key: K,
+      value: AppConfig[K]
+    ): Promise<void> => ipcRenderer.invoke(IPC.ConfigSet, key, value)
   },
   file: {
     import: (req: ImportRequest): Promise<ImportItemStatus> =>
@@ -26,7 +28,8 @@ const api = {
     delete: (ids: string[]): Promise<void> =>
       ipcRenderer.invoke(IPC.FileDelete, ids),
     open: (id: string): Promise<void> => ipcRenderer.invoke(IPC.FileOpen, id),
-    openLog: (id: string): Promise<void> => ipcRenderer.invoke(IPC.FileOpenLog, id),
+    openLog: (id: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.FileOpenLog, id),
     update: (id: string, fields: { note?: string }): Promise<FileInfo | null> =>
       ipcRenderer.invoke(IPC.FileUpdate, id, fields),
     existsOnDisk: (id: string): Promise<boolean> =>
@@ -55,7 +58,8 @@ const api = {
       id: string,
       fields: { name?: string; color?: string }
     ): Promise<TagInfo> => ipcRenderer.invoke(IPC.TagUpdate, id, fields),
-    delete: (id: string): Promise<void> => ipcRenderer.invoke(IPC.TagDelete, id),
+    delete: (id: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.TagDelete, id),
     setOnFile: (fileId: string, tagIds: string[]): Promise<void> =>
       ipcRenderer.invoke(IPC.TagSetOnFile, fileId, tagIds)
   },
@@ -64,7 +68,8 @@ const api = {
       ipcRenderer.invoke(IPC.SearchSuggest, prefix)
   },
   updater: {
-    getState: (): Promise<UpdateState> => ipcRenderer.invoke(IPC.UpdaterGetState),
+    getState: (): Promise<UpdateState> =>
+      ipcRenderer.invoke(IPC.UpdaterGetState),
     check: (): Promise<void> => ipcRenderer.invoke(IPC.UpdaterCheck),
     quitAndInstall: (): Promise<void> =>
       ipcRenderer.invoke(IPC.UpdaterQuitAndInstall),

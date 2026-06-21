@@ -1,13 +1,13 @@
 // 单一事实来源：跨 main / preload / renderer 共享的数据契约。
 
 export interface FileInfo {
-  id: string                  // UUID
-  name: string                // 含扩展名的原始文件名
-  ext: string                 // 小写扩展名（不含点），如 "pdf"
-  size: number                // 字节数
-  storagePath: string         // 仓库内相对路径，如 "files/<uuid>/<name>"
+  id: string // UUID
+  name: string // 含扩展名的原始文件名
+  ext: string // 小写扩展名（不含点），如 "pdf"
+  size: number // 字节数
+  storagePath: string // 仓库内相对路径，如 "files/<uuid>/<name>"
   note: string
-  importedAt: string          // ISO8601
+  importedAt: string // ISO8601
   updatedAt: string
 }
 
@@ -21,7 +21,7 @@ export interface TagInfo {
 export type DuplicateAction = 'skip' | 'overwrite' | 'keep-both'
 
 export interface ImportRequest {
-  sourcePath: string          // 源文件绝对路径
+  sourcePath: string // 源文件绝对路径
   /**
    * 若为 undefined：检测到重名时返回 status='duplicate'，由 UI 询问后再次调用。
    * 若已设置：按该策略处理。

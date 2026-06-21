@@ -35,7 +35,9 @@ export class TagService {
         'INSERT INTO tags (id, name, color, created_at) VALUES (?, ?, ?, ?)'
       )
       .run(id, input.name, color, now)
-    const row = this.db.prepare('SELECT * FROM tags WHERE id=?').get(id) as TagRow
+    const row = this.db
+      .prepare('SELECT * FROM tags WHERE id=?')
+      .get(id) as TagRow
     return rowToTag(row)
   }
 
@@ -51,12 +53,18 @@ export class TagService {
       params.push(fields.color)
     }
     if (sets.length === 0) {
-      const r = this.db.prepare('SELECT * FROM tags WHERE id=?').get(id) as TagRow
+      const r = this.db
+        .prepare('SELECT * FROM tags WHERE id=?')
+        .get(id) as TagRow
       return rowToTag(r)
     }
     params.push(id)
-    this.db.prepare(`UPDATE tags SET ${sets.join(', ')} WHERE id=?`).run(...params)
-    const row = this.db.prepare('SELECT * FROM tags WHERE id=?').get(id) as TagRow
+    this.db
+      .prepare(`UPDATE tags SET ${sets.join(', ')} WHERE id=?`)
+      .run(...params)
+    const row = this.db
+      .prepare('SELECT * FROM tags WHERE id=?')
+      .get(id) as TagRow
     return rowToTag(row)
   }
 

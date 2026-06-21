@@ -11,7 +11,9 @@ describe('database', () => {
 
   it('creates files / tags / file_tags / file_opens tables', () => {
     const tables = db
-      .prepare("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
+      .prepare(
+        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
+      )
       .all() as Array<{ name: string }>
     const names = tables.map((t) => t.name)
     expect(names).toContain('files')
@@ -25,13 +27,13 @@ describe('database', () => {
       `INSERT INTO files (id,name,ext,size,storage_path,note,imported_at,updated_at)
        VALUES (?,?,?,?,?,?,?,?)`
     ).run('f1', 'a.pdf', 'pdf', 1, 'files/f1/a.pdf', '', 't', 't')
-    db.prepare(`INSERT INTO tags (id,name,color,created_at) VALUES (?,?,?,?)`).run(
-      't1',
-      'work',
-      '#abc',
-      't'
+    db.prepare(
+      `INSERT INTO tags (id,name,color,created_at) VALUES (?,?,?,?)`
+    ).run('t1', 'work', '#abc', 't')
+    db.prepare(`INSERT INTO file_tags (file_id,tag_id) VALUES (?,?)`).run(
+      'f1',
+      't1'
     )
-    db.prepare(`INSERT INTO file_tags (file_id,tag_id) VALUES (?,?)`).run('f1', 't1')
 
     db.prepare(`DELETE FROM files WHERE id=?`).run('f1')
     const rows = db.prepare(`SELECT * FROM file_tags`).all()
@@ -39,12 +41,9 @@ describe('database', () => {
   })
 
   it('enforces unique tag name', () => {
-    db.prepare(`INSERT INTO tags (id,name,color,created_at) VALUES (?,?,?,?)`).run(
-      't1',
-      'work',
-      '#abc',
-      't'
-    )
+    db.prepare(
+      `INSERT INTO tags (id,name,color,created_at) VALUES (?,?,?,?)`
+    ).run('t1', 'work', '#abc', 't')
     expect(() =>
       db
         .prepare(`INSERT INTO tags (id,name,color,created_at) VALUES (?,?,?,?)`)

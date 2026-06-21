@@ -31,6 +31,12 @@ jobs:
         # 打包阶段 electron-builder 会自行 @electron/rebuild 切到 electron-v128。
         run: npm rebuild better-sqlite3
 
+      - name: Lint
+        run: npm run lint
+
+      - name: Format check
+        run: npm run format:check
+
       - name: Typecheck
         run: npm run typecheck
 

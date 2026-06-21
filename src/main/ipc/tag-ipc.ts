@@ -11,15 +11,13 @@ export function registerTagIpc(svc: TagService): void {
   )
   ipcMain.handle(
     IPC.TagUpdate,
-    (
-      _e,
-      id: string,
-      fields: { name?: string; color?: string }
-    ): TagInfo => svc.update(id, fields)
+    (_e, id: string, fields: { name?: string; color?: string }): TagInfo =>
+      svc.update(id, fields)
   )
   ipcMain.handle(IPC.TagDelete, (_e, id: string): void => svc.delete(id))
   ipcMain.handle(
     IPC.TagSetOnFile,
-    (_e, fileId: string, tagIds: string[]): void => svc.setOnFile(fileId, tagIds)
+    (_e, fileId: string, tagIds: string[]): void =>
+      svc.setOnFile(fileId, tagIds)
   )
 }

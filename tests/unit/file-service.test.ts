@@ -41,13 +41,18 @@ describe('FileService', () => {
     expect(result.file.name).toBe('a.pdf')
     expect(result.file.ext).toBe('pdf')
     expect(result.file.size).toBe('pdf-bytes'.length)
-    const onDisk = await fs.readFile(path.join(repoRoot, result.file.storagePath), 'utf8')
+    const onDisk = await fs.readFile(
+      path.join(repoRoot, result.file.storagePath),
+      'utf8'
+    )
     expect(onDisk).toBe('pdf-bytes')
   })
 
   it('detects duplicate by name (case-insensitive) without action', async () => {
     await svc.import({ sourcePath: await writeSource('Doc.pdf') })
-    const result = await svc.import({ sourcePath: await writeSource('doc.pdf') })
+    const result = await svc.import({
+      sourcePath: await writeSource('doc.pdf')
+    })
     expect(result.status).toBe('duplicate')
     if (result.status !== 'duplicate') return
     expect(result.existing.name).toBe('Doc.pdf')
@@ -57,7 +62,10 @@ describe('FileService', () => {
     const src = await writeSource('a.pdf')
     await svc.import({ sourcePath: src })
     const before = svc.list({ filter: {} })
-    const result = await svc.import({ sourcePath: src, duplicateAction: 'skip' })
+    const result = await svc.import({
+      sourcePath: src,
+      duplicateAction: 'skip'
+    })
     expect(result.status).toBe('skipped')
     expect(svc.list({ filter: {} })).toEqual(before)
   })
@@ -76,13 +84,18 @@ describe('FileService', () => {
     // 故测试中显式用旧 name 触发重复：复制成同名后再调用
     const sameName = path.join(srcDir, 'a.pdf')
     await fs.writeFile(sameName, 'v2-longer')
-    const r2 = await svc.import({ sourcePath: sameName, duplicateAction: 'overwrite' })
+    const r2 = await svc.import({
+      sourcePath: sameName,
+      duplicateAction: 'overwrite'
+    })
 
     expect(r2.status).toBe('overwritten')
     if (r2.status !== 'overwritten') return
     expect(r2.file.id).toBe(r1.file.id)
     expect(r2.file.size).toBe('v2-longer'.length)
-    const note = db.prepare('SELECT note FROM files WHERE id=?').get(r1.file.id) as {
+    const note = db
+      .prepare('SELECT note FROM files WHERE id=?')
+      .get(r1.file.id) as {
       note: string
     }
     expect(note.note).toBe('keep me')
@@ -97,7 +110,10 @@ describe('FileService', () => {
     expect(r2.status).toBe('imported')
     if (r2.status !== 'imported') return
     expect(r2.file.name).toBe('a (2).pdf')
-    const onDisk = await fs.readFile(path.join(repoRoot, r2.file.storagePath), 'utf8')
+    const onDisk = await fs.readFile(
+      path.join(repoRoot, r2.file.storagePath),
+      'utf8'
+    )
     expect(onDisk).toBe('v2')
   })
 
@@ -142,9 +158,11 @@ describe('FileService', () => {
     if (r.status !== 'imported') throw new Error('setup')
     svc.logOpen(r.file.id)
     svc.logOpen(r.file.id)
-    const cnt = (db
-      .prepare('SELECT COUNT(*) AS c FROM file_opens WHERE file_id=?')
-      .get(r.file.id) as { c: number }).c
+    const cnt = (
+      db
+        .prepare('SELECT COUNT(*) AS c FROM file_opens WHERE file_id=?')
+        .get(r.file.id) as { c: number }
+    ).c
     expect(cnt).toBe(2)
   })
 

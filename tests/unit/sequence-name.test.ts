@@ -17,7 +17,9 @@ describe('nextSequenceName', () => {
   })
 
   it('handles multi-dot filenames (extension = last segment)', () => {
-    expect(nextSequenceName('a.tar.gz', new Set(['a.tar.gz']))).toBe('a.tar (2).gz')
+    expect(nextSequenceName('a.tar.gz', new Set(['a.tar.gz']))).toBe(
+      'a.tar (2).gz'
+    )
   })
 
   it('is case-insensitive when checking taken set', () => {

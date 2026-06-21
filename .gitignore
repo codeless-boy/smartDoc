@@ -13,3 +13,4 @@ coverage/
 .superpowers/
 playwright-report/
 test-results/
+.eslintcache

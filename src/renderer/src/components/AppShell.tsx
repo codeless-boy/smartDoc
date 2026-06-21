@@ -39,7 +39,11 @@ export function AppShell(): JSX.Element {
   return (
     <Layout style={{ height: '100vh' }}>
       <Layout.Header
-        style={{ background: '#fff', padding: 0, borderBottom: '1px solid #eee' }}
+        style={{
+          background: '#fff',
+          padding: 0,
+          borderBottom: '1px solid #eee'
+        }}
       >
         <TopBar />
       </Layout.Header>

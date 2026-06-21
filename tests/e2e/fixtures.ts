@@ -1,4 +1,9 @@
-import { test as base, _electron, type ElectronApplication, type Page } from '@playwright/test'
+import {
+  test as base,
+  _electron,
+  type ElectronApplication,
+  type Page
+} from '@playwright/test'
 import fs from 'node:fs/promises'
 import os from 'node:os'
 import path from 'node:path'
@@ -13,6 +18,7 @@ export interface Fixtures {
 }
 
 export const test = base.extend<Fixtures>({
+  // eslint-disable-next-line no-empty-pattern -- Playwright fixture 签名要求首参为对象，此处无依赖故空解构
   repoDir: async ({}, use) => {
     const dir = await fs.mkdtemp(path.join(os.tmpdir(), 'smartdoc-e2e-repo-'))
     await use(dir)
@@ -20,7 +26,9 @@ export const test = base.extend<Fixtures>({
   },
 
   app: async ({ repoDir }, use) => {
-    const userDataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'smartdoc-e2e-data-'))
+    const userDataDir = await fs.mkdtemp(
+      path.join(os.tmpdir(), 'smartdoc-e2e-data-')
+    )
     // 预置 config 文件，避免启动时弹仓库选择对话框
     await fs.writeFile(
       path.join(userDataDir, 'smartdoc-config.json'),
@@ -48,6 +56,7 @@ export const test = base.extend<Fixtures>({
     await use(page)
   },
 
+  // eslint-disable-next-line no-empty-pattern -- Playwright fixture 签名要求首参为对象，此处无依赖故空解构
   writeSource: async ({}, use) => {
     const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), 'smartdoc-e2e-src-'))
     async function writer(name: string, content = name): Promise<string> {

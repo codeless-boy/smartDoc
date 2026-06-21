@@ -103,7 +103,9 @@ export function FileDrawer(): JSX.Element {
         <Typography.Title level={5}>文件信息</Typography.Title>
         <Descriptions column={1} size="small">
           <Descriptions.Item label="大小">{file.size} B</Descriptions.Item>
-          <Descriptions.Item label="导入时间">{file.importedAt}</Descriptions.Item>
+          <Descriptions.Item label="导入时间">
+            {file.importedAt}
+          </Descriptions.Item>
           <Descriptions.Item label="路径">{file.storagePath}</Descriptions.Item>
         </Descriptions>
 

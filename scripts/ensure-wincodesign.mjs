@@ -13,15 +13,8 @@ import path from 'node:path'
 import { downloadFile } from './download.mjs'
 
 const VERSION = '2.6.0'
-const MIRROR =
-  'https://npmmirror.com/mirrors/electron-builder-binaries/'
-const SEVENZIP = path.join(
-  'node_modules',
-  '7zip-bin',
-  'win',
-  'x64',
-  '7za.exe'
-)
+const MIRROR = 'https://npmmirror.com/mirrors/electron-builder-binaries/'
+const SEVENZIP = path.join('node_modules', '7zip-bin', 'win', 'x64', '7za.exe')
 
 export async function ensureWinCodeSign() {
   if (process.platform !== 'win32') return

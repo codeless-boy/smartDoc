@@ -10,7 +10,10 @@ import type {
 import { logger } from '@main/logger'
 import type { FileService } from '@main/services/file-service'
 
-export function registerFileIpc(svc: FileService, repoRoot: () => string | null): void {
+export function registerFileIpc(
+  svc: FileService,
+  repoRoot: () => string | null
+): void {
   ipcMain.handle(
     IPC.FileImport,
     async (_e, req: ImportRequest): Promise<ImportItemStatus> => {
@@ -19,9 +22,12 @@ export function registerFileIpc(svc: FileService, repoRoot: () => string | null)
     }
   )
 
-  ipcMain.handle(IPC.FileList, async (_e, query: ListQuery): Promise<FileInfo[]> => {
-    return svc.list(query)
-  })
+  ipcMain.handle(
+    IPC.FileList,
+    async (_e, query: ListQuery): Promise<FileInfo[]> => {
+      return svc.list(query)
+    }
+  )
 
   ipcMain.handle(IPC.FileDelete, async (_e, ids: string[]): Promise<void> => {
     logger.info('ipc file:delete', ids)
@@ -43,13 +49,18 @@ export function registerFileIpc(svc: FileService, repoRoot: () => string | null)
 
   ipcMain.handle(IPC.FileOpenLog, (_e, id: string): void => svc.logOpen(id))
 
-  ipcMain.handle(IPC.FileUpdate, (_e, id: string, fields: { note?: string }) => {
-    if (typeof fields.note === 'string') return svc.updateNote(id, fields.note)
-    return svc.list({ filter: {} }).find((f) => f.id === id) ?? null
-  })
+  ipcMain.handle(
+    IPC.FileUpdate,
+    (_e, id: string, fields: { note?: string }) => {
+      if (typeof fields.note === 'string')
+        return svc.updateNote(id, fields.note)
+      return svc.list({ filter: {} }).find((f) => f.id === id) ?? null
+    }
+  )
 
-  ipcMain.handle(IPC.FileExistsOnDisk, async (_e, id: string): Promise<boolean> =>
-    svc.existsOnDisk(id)
+  ipcMain.handle(
+    IPC.FileExistsOnDisk,
+    async (_e, id: string): Promise<boolean> => svc.existsOnDisk(id)
   )
 
   ipcMain.handle(IPC.DialogPickFiles, async (): Promise<string[]> => {

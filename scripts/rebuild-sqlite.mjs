@@ -23,7 +23,7 @@ import { execFileSync } from 'node:child_process'
 
 const PKG_VERSION = '12.11.1'
 const TARGETS = {
-  node: { runtime: 'node', abi: 'v147' },     // Host Node 26 (NODE_MODULE_VERSION 147)
+  node: { runtime: 'node', abi: 'v147' }, // Host Node 26 (NODE_MODULE_VERSION 147)
   electron: { runtime: 'electron', abi: 'v128' } // Electron 32 (Node 22 → ABI 128)
 }
 
@@ -34,14 +34,8 @@ if (!TARGETS[target]) {
 }
 
 const { runtime, abi } = TARGETS[target]
-const tarballName =
-  `better-sqlite3-v${PKG_VERSION}-${runtime}-${abi}-win32-x64.tar.gz`
-const cacheDir = path.join(
-  os.homedir(),
-  'AppData',
-  'Local',
-  'prebuild-install'
-)
+const tarballName = `better-sqlite3-v${PKG_VERSION}-${runtime}-${abi}-win32-x64.tar.gz`
+const cacheDir = path.join(os.homedir(), 'AppData', 'Local', 'prebuild-install')
 const tarball = path.join(cacheDir, tarballName)
 
 if (!fs.existsSync(tarball)) {

@@ -59,7 +59,9 @@ export class FileRepo {
     if (opts.overwrite) {
       // 删除目录下所有旧文件，确保 dest 唯一
       const entries = await fs.readdir(dir).catch(() => [] as string[])
-      await Promise.all(entries.map((e) => fs.rm(path.join(dir, e), { force: true })))
+      await Promise.all(
+        entries.map((e) => fs.rm(path.join(dir, e), { force: true }))
+      )
     }
 
     const tmp = `${dest}.tmp-${process.pid}`
@@ -86,7 +88,10 @@ export class FileRepo {
 
   /** 删除 files/<uuid>/ 整个目录（删除记录时调用） */
   async remove(uuid: string): Promise<void> {
-    await fs.rm(path.join(this.filesDir(), uuid), { recursive: true, force: true })
+    await fs.rm(path.join(this.filesDir(), uuid), {
+      recursive: true,
+      force: true
+    })
   }
 
   /** 检查 files/<uuid>/<name> 是否存在 */

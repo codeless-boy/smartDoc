@@ -12,9 +12,15 @@ npm run dev          # 启动 Electron 开发模式
 npm test             # Vitest watch
 npm run test:run     # 单跑全部单测
 npm run test:e2e     # Playwright 端到端（自动 build + 切换 better-sqlite3 ABI）
+npm run lint         # ESLint 静态检查（0 error 为通过，warning 不阻塞）
+npm run lint:fix     # ESLint 自动修复可修复的问题
+npm run format       # Prettier 格式化全部文件
+npm run format:check # Prettier 格式检查（CI 门禁）
 npm run typecheck    # 三套 tsconfig 类型检查
 npm run build        # 打 main/preload/renderer 产物到 out/
 ```
+
+> **CI 门禁**：`npm run publish`（由 `v*` tag 触发的 GitHub Actions）会依次跑 lint → format:check → typecheck → test:run，任一失败即中止发布。提交前本地跑一遍这四项可避免 CI 反复失败。
 
 > **better-sqlite3 双 ABI**：Vitest 使用宿主 Node ABI 的二进制，Playwright E2E 使用 Electron 嵌入 Node 的 ABI。`test:e2e` 链路会自动切换两种 ABI；如需手动切换：`npm run rebuild:electron` / `npm run rebuild:node`。
 

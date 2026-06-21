@@ -1,15 +1,17 @@
 import { test, expect } from './fixtures'
-import fs from 'node:fs/promises'
-import path from 'node:path'
 
 test.describe('import', () => {
-  test('import via dialog adds row to table', async ({ page, app, writeSource }) => {
+  test('import via dialog adds row to table', async ({
+    page,
+    app,
+    writeSource
+  }) => {
     const src = await writeSource('hello.pdf', 'pdf-bytes')
 
     // mock dialog.showOpenDialog 返回我们指定的路径
     await app.evaluate(async ({ dialog }, p) => {
       dialog.showOpenDialog = async () =>
-        ({ canceled: false, filePaths: [p] } as any)
+        ({ canceled: false, filePaths: [p] }) as any
     }, src)
 
     await page.getByRole('button', { name: '导入文件' }).click()
@@ -27,11 +29,13 @@ test.describe('import', () => {
 
     await app.evaluate(async ({ dialog }, p) => {
       dialog.showOpenDialog = async () =>
-        ({ canceled: false, filePaths: [p] } as any)
+        ({ canceled: false, filePaths: [p] }) as any
     }, src1)
 
     await page.getByRole('button', { name: '导入文件' }).click()
-    await expect(page.getByTestId('file-table').getByText('dup.pdf')).toBeVisible()
+    await expect(
+      page.getByTestId('file-table').getByText('dup.pdf')
+    ).toBeVisible()
 
     // 第二次导入同名
     await page.getByRole('button', { name: '导入文件' }).click()

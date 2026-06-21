@@ -25,21 +25,28 @@ export function DuplicateDialog({
         <a key="skip" onClick={() => onChoose('skip')}>
           跳过
         </a>,
-        <a key="overwrite" onClick={() => onChoose('overwrite')} style={{ marginLeft: 16 }}>
+        <a
+          key="overwrite"
+          onClick={() => onChoose('overwrite')}
+          style={{ marginLeft: 16 }}
+        >
           覆盖
         </a>,
-        <a key="keep" onClick={() => onChoose('keep-both')} style={{ marginLeft: 16 }}>
+        <a
+          key="keep"
+          onClick={() => onChoose('keep-both')}
+          style={{ marginLeft: 16 }}
+        >
           保留两份
         </a>
       ]}
     >
       <Space direction="vertical">
         <Typography.Text>
-          仓库中已有同名文件 <Typography.Text strong>{existing.name}</Typography.Text>。
+          仓库中已有同名文件{' '}
+          <Typography.Text strong>{existing.name}</Typography.Text>。
         </Typography.Text>
-        <Typography.Text type="secondary">
-          源：{sourcePath}
-        </Typography.Text>
+        <Typography.Text type="secondary">源：{sourcePath}</Typography.Text>
       </Space>
     </Modal>
   )

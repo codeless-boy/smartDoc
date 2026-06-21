@@ -28,7 +28,11 @@ export class SearchService {
       .all(like) as Array<{ id: string; name: string }>
 
     return [
-      ...tags.map<SearchSuggestion>((t) => ({ kind: 'tag', text: t.name, id: t.id })),
+      ...tags.map<SearchSuggestion>((t) => ({
+        kind: 'tag',
+        text: t.name,
+        id: t.id
+      })),
       ...files.map<SearchSuggestion>((f) => ({
         kind: 'file',
         text: f.name,

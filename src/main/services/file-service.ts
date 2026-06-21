@@ -190,7 +190,8 @@ export class FileService {
       }
 
       const uuid = uuidv4()
-      const useProgress = stat.size > LARGE_FILE_THRESHOLD && this.progressEmit !== null
+      const useProgress =
+        stat.size > LARGE_FILE_THRESHOLD && this.progressEmit !== null
       const storagePath = await this.repo.ingest({
         uuid,
         sourcePath: req.sourcePath,
@@ -235,9 +236,9 @@ export class FileService {
     this.db
       .prepare('UPDATE files SET note=?, updated_at=? WHERE id=?')
       .run(note, now, id)
-    const row = this.db
-      .prepare('SELECT * FROM files WHERE id=?')
-      .get(id) as FileRow | undefined
+    const row = this.db.prepare('SELECT * FROM files WHERE id=?').get(id) as
+      | FileRow
+      | undefined
     return row ? rowToFile(row) : null
   }
 
