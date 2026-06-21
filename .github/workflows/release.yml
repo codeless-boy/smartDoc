@@ -25,6 +25,12 @@ jobs:
       - name: Install
         run: npm ci
 
+      - name: Rebuild better-sqlite3 for host Node
+        # 强制 better-sqlite3 针对宿主 Node 22（ABI v127）重新拉取 prebuilt，
+        # 覆盖任何先前的 ABI 状态。Vitest 跑在宿主 Node 下，需要 v127；
+        # 打包阶段 electron-builder 会自行 @electron/rebuild 切到 electron-v128。
+        run: npm rebuild better-sqlite3
+
       - name: Typecheck
         run: npm run typecheck
 
