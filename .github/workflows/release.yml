@@ -16,7 +16,10 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # Node 22 命中 better-sqlite3 v12.11.1 的 node-v127 prebuilt。
+          # Node 20 命中 prebuilt 盲区，会回退到 node-gyp 源码编译，
+          # 而 windows-latest runner 默认不带 VS C++ 工具链，编译失败。
+          node-version: 22
           cache: npm
 
       - name: Install
