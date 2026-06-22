@@ -1,22 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { AutoComplete, Button, Input, Space } from 'antd'
 import { ImportOutlined } from '@ant-design/icons'
-import type { SearchSuggestion, ImportItemStatus } from '@shared/types'
 import { useAppStore } from '@renderer/store/app-store'
-import { refreshAll } from '@renderer/api/use-files'
+import { useImport } from '@renderer/hooks/use-import'
 import { DuplicateDialog } from './DuplicateDialog'
 
 export function TopBar(): JSX.Element {
   const setKeyword = useAppStore((s) => s.setKeyword)
   const [draft, setDraft] = useState('')
   const [options, setOptions] = useState<{ value: string; label: string }[]>([])
-  const [dup, setDup] = useState<{
-    sourcePath: string
-    existing: SearchSuggestion extends never
-      ? never
-      : import('@shared/types').FileInfo
-  } | null>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { pickAndImport, dup, setDup } = useImport()
 
   // 输入 → 300ms 防抖 → 写入 store.keyword 触发列表刷新
   useEffect(() => {
@@ -47,37 +41,6 @@ export function TopBar(): JSX.Element {
     []
   )
 
-  async function handleImport(paths: string[]): Promise<void> {
-    for (const p of paths) {
-      let result: ImportItemStatus = await window.api.file.import({
-        sourcePath: p
-      })
-      if (result.status === 'duplicate') {
-        const action = await new Promise<'skip' | 'overwrite' | 'keep-both'>(
-          (resolve) => {
-            setDup({
-              sourcePath: result.status === 'duplicate' ? result.sourcePath : p,
-              existing:
-                result.status === 'duplicate' ? result.existing : ({} as never)
-            })
-            ;(window as any).__smartdoc_dupResolver = resolve
-          }
-        )
-        setDup(null)
-        result = await window.api.file.import({
-          sourcePath: p,
-          duplicateAction: action
-        })
-      }
-    }
-    await refreshAll()
-  }
-
-  async function pickAndImport(): Promise<void> {
-    const paths = await window.api.dialog.pickFiles()
-    if (paths.length > 0) await handleImport(paths)
-  }
-
   return (
     <Space style={{ padding: 12, width: '100%' }}>
       <AutoComplete
@@ -91,6 +54,7 @@ export function TopBar(): JSX.Element {
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           allowClear
+          data-testid="search-input"
         />
       </AutoComplete>
       <Button type="primary" icon={<ImportOutlined />} onClick={pickAndImport}>
@@ -101,8 +65,14 @@ export function TopBar(): JSX.Element {
           open
           sourcePath={dup.sourcePath}
           existing={dup.existing}
-          onChoose={(a) => (window as any).__smartdoc_dupResolver?.(a)}
-          onCancel={() => (window as any).__smartdoc_dupResolver?.('skip')}
+          onChoose={(a) => {
+            ;(window as any).__smartdoc_dupResolver?.(a)
+            setDup(null)
+          }}
+          onCancel={() => {
+            ;(window as any).__smartdoc_dupResolver?.('skip')
+            setDup(null)
+          }}
         />
       )}
     </Space>
