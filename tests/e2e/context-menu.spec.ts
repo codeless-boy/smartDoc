@@ -32,11 +32,7 @@ test.describe('context menu', () => {
     await expect(page.getByText('已复制文件名')).toBeVisible()
   })
 
-  test('Esc closes the context menu', async ({
-    page,
-    app,
-    writeSource
-  }) => {
+  test('Esc closes the context menu', async ({ page, app, writeSource }) => {
     const src = await writeSource('esc-test.pdf', 'data')
     await app.evaluate(async ({ dialog }, p) => {
       dialog.showOpenDialog = async () =>

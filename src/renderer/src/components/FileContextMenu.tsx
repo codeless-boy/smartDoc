@@ -12,7 +12,9 @@ export function FileContextMenu(): JSX.Element | null {
   // 滚动表格、Esc 时关闭菜单
   useEffect(() => {
     if (!target) return
-    function onScroll(): void { close() }
+    function onScroll(): void {
+      close()
+    }
     function onKey(e: KeyboardEvent): void {
       if (e.key === 'Escape') close()
     }
@@ -32,12 +34,18 @@ export function FileContextMenu(): JSX.Element | null {
     {
       key: 'open',
       label: '打开文件',
-      onClick: () => { void window.api.file.open(file.id); close() }
+      onClick: () => {
+        void window.api.file.open(file.id)
+        close()
+      }
     },
     {
       key: 'reveal',
       label: '在文件夹中定位',
-      onClick: () => { void window.api.file.showInDir(file.id); close() }
+      onClick: () => {
+        void window.api.file.showInDir(file.id)
+        close()
+      }
     },
     { type: 'divider' },
     {
@@ -65,7 +73,10 @@ export function FileContextMenu(): JSX.Element | null {
     {
       key: 'edit-tags',
       label: '编辑标签',
-      onClick: () => { select(file.id); close() }
+      onClick: () => {
+        select(file.id)
+        close()
+      }
     },
     { type: 'divider' },
     {
@@ -94,7 +105,9 @@ export function FileContextMenu(): JSX.Element | null {
     <Dropdown
       menu={{ items }}
       open
-      onOpenChange={(open) => { if (!open) close() }}
+      onOpenChange={(open) => {
+        if (!open) close()
+      }}
     >
       <span
         data-testid="ctx-anchor"

@@ -91,7 +91,9 @@ export function FileTable({ pickAndImport }: Props): JSX.Element {
         onContextMenu: (e: React.MouseEvent) => {
           e.preventDefault()
           select(record.id)
-          useAppStore.getState().openContextMenu({ id: record.id, x: e.clientX, y: e.clientY })
+          useAppStore
+            .getState()
+            .openContextMenu({ id: record.id, x: e.clientX, y: e.clientY })
         }
       })}
     />
