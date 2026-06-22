@@ -2,8 +2,10 @@ import { Space, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import type { FileWithTags } from '@shared/types'
 import { useAppStore } from '@renderer/store/app-store'
+import { deriveEmptyState } from '@renderer/lib/derive-empty-state'
 import { fileIconFor } from './file-icon'
 import { TagChip } from './TagChip'
+import { EmptyState } from './EmptyState'
 import './file-table.css'
 
 function formatSize(bytes: number): string {
@@ -18,12 +20,22 @@ function formatDate(iso: string): string {
   return iso.slice(0, 10)
 }
 
-export function FileTable(): JSX.Element {
+interface Props {
+  pickAndImport: () => Promise<void>
+}
+
+export function FileTable({ pickAndImport }: Props): JSX.Element {
   const files = useAppStore((s) => s.files)
   const tags = useAppStore((s) => s.tags)
+  const filter = useAppStore((s) => s.filter)
   const select = useAppStore((s) => s.select)
   const selectedId = useAppStore((s) => s.selectedId)
   const loading = useAppStore((s) => s.loading)
+
+  const empty = deriveEmptyState(files, loading, filter)
+  if (empty) {
+    return <EmptyState state={empty} onImport={pickAndImport} />
+  }
 
   const tagsById = new Map(tags.map((t) => [t.id, t] as const))
 
@@ -61,7 +73,6 @@ export function FileTable(): JSX.Element {
       rowKey="id"
       columns={columns}
       dataSource={files}
-      loading={loading}
       pagination={false}
       size="small"
       data-testid="file-table"

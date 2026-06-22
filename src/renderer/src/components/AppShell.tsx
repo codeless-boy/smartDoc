@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Layout } from 'antd'
 import type { DuplicateAction, FileInfo } from '@shared/types'
 import { useFiles } from '@renderer/api/use-files'
+import { useImport } from '@renderer/hooks/use-import'
 import { TopBar } from './TopBar'
 import { SidePanel } from './SidePanel'
 import { FileTable } from './FileTable'
@@ -20,7 +21,11 @@ export function AppShell(): JSX.Element {
     void window.api.config.getAll().then((c) => setRepoReady(!!c.repoPath))
   }, [])
 
-  const [dup, setDup] = useState<{
+  // 共享的导入入口：TopBar 按钮、EmptyState onboarding 按钮、键盘 Ctrl+I 共用。
+  const { pickAndImport, dup: importDup, setDup: setImportDup } = useImport()
+
+  // DropZone 的重名对话框走另一条路径（Promise 直接 resolve），保持原状。
+  const [dropDup, setDropDup] = useState<{
     sourcePath: string
     existing: FileInfo
     resolve: (a: DuplicateAction) => void
@@ -30,7 +35,9 @@ export function AppShell(): JSX.Element {
     sourcePath: string,
     existing: FileInfo
   ): Promise<DuplicateAction> {
-    return new Promise((resolve) => setDup({ sourcePath, existing, resolve }))
+    return new Promise((resolve) =>
+      setDropDup({ sourcePath, existing, resolve })
+    )
   }
 
   if (repoReady === null) return <></>
@@ -40,35 +47,51 @@ export function AppShell(): JSX.Element {
     <Layout style={{ height: '100vh' }}>
       <Layout.Header
         style={{
-          background: '#fff',
           padding: 0,
-          borderBottom: '1px solid #eee'
+          borderBottom: '1px solid #e8e8e8',
+          height: 48,
+          lineHeight: '48px'
         }}
       >
-        <TopBar />
+        <TopBar pickAndImport={pickAndImport} />
       </Layout.Header>
       <Layout>
-        <Layout.Sider width={220} style={{ background: '#fff' }}>
+        <Layout.Sider width={220}>
           <SidePanel />
         </Layout.Sider>
         <Layout.Content style={{ overflow: 'auto', padding: 12 }}>
-          <FileTable />
+          <FileTable pickAndImport={pickAndImport} />
         </Layout.Content>
       </Layout>
       <FileDrawer />
       <DropZone onDuplicate={askDuplicate} />
-      {dup && (
+      {importDup && (
         <DuplicateDialog
           open
-          sourcePath={dup.sourcePath}
-          existing={dup.existing}
+          sourcePath={importDup.sourcePath}
+          existing={importDup.existing}
           onChoose={(a) => {
-            dup.resolve(a)
-            setDup(null)
+            ;(window as any).__smartdoc_dupResolver?.(a)
+            setImportDup(null)
           }}
           onCancel={() => {
-            dup.resolve('skip')
-            setDup(null)
+            ;(window as any).__smartdoc_dupResolver?.('skip')
+            setImportDup(null)
+          }}
+        />
+      )}
+      {dropDup && (
+        <DuplicateDialog
+          open
+          sourcePath={dropDup.sourcePath}
+          existing={dropDup.existing}
+          onChoose={(a) => {
+            dropDup.resolve(a)
+            setDropDup(null)
+          }}
+          onCancel={() => {
+            dropDup.resolve('skip')
+            setDropDup(null)
           }}
         />
       )}

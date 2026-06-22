@@ -2,17 +2,17 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { AutoComplete, Button, Input, Space } from 'antd'
 import { ImportOutlined } from '@ant-design/icons'
 import { useAppStore } from '@renderer/store/app-store'
-import { useImport } from '@renderer/hooks/use-import'
-import { DuplicateDialog } from './DuplicateDialog'
 
-export function TopBar(): JSX.Element {
+interface Props {
+  pickAndImport: () => Promise<void>
+}
+
+export function TopBar({ pickAndImport }: Props): JSX.Element {
   const setKeyword = useAppStore((s) => s.setKeyword)
   const [draft, setDraft] = useState('')
   const [options, setOptions] = useState<{ value: string; label: string }[]>([])
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const { pickAndImport, dup, setDup } = useImport()
 
-  // 输入 → 300ms 防抖 → 写入 store.keyword 触发列表刷新
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => {
@@ -60,21 +60,6 @@ export function TopBar(): JSX.Element {
       <Button type="primary" icon={<ImportOutlined />} onClick={pickAndImport}>
         导入文件
       </Button>
-      {dup && (
-        <DuplicateDialog
-          open
-          sourcePath={dup.sourcePath}
-          existing={dup.existing}
-          onChoose={(a) => {
-            ;(window as any).__smartdoc_dupResolver?.(a)
-            setDup(null)
-          }}
-          onCancel={() => {
-            ;(window as any).__smartdoc_dupResolver?.('skip')
-            setDup(null)
-          }}
-        />
-      )}
     </Space>
   )
 }
