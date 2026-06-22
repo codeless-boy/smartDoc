@@ -70,8 +70,8 @@ export function DropZone({ onDuplicate }: Props): JSX.Element | null {
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(99, 102, 241, 0.15)',
-        border: '4px dashed #6366f1',
+        background: 'rgba(31, 31, 31, 0.08)',
+        border: '4px dashed #1f1f1f',
         zIndex: 1000,
         display: 'flex',
         alignItems: 'center',
