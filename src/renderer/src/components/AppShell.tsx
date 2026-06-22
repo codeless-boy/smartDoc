@@ -13,6 +13,7 @@ import { DuplicateDialog } from './DuplicateDialog'
 import { FirstRunGuide } from './FirstRunGuide'
 import { UpdateNotifier } from './UpdateNotifier'
 import { ImportProgress } from './ImportProgress'
+import { FileContextMenu } from './FileContextMenu'
 
 export function AppShell(): JSX.Element {
   useFiles()
@@ -101,6 +102,7 @@ export function AppShell(): JSX.Element {
       )}
       <UpdateNotifier />
       <ImportProgress />
+      <FileContextMenu />
     </Layout>
   )
 }
