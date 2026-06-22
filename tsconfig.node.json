@@ -15,13 +15,15 @@
     "baseUrl": ".",
     "paths": {
       "@shared/*": ["src/shared/*"],
-      "@main/*": ["src/main/*"]
+      "@main/*": ["src/main/*"],
+      "@renderer/*": ["src/renderer/src/*"]
     }
   },
   "include": [
     "src/main/**/*.ts",
     "src/preload/**/*.ts",
     "src/shared/**/*.ts",
+    "src/renderer/src/lib/**/*.ts",
     "tests/unit/**/*.ts",
     "electron.vite.config.ts",
     "vitest.config.ts"

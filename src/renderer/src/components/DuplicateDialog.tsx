@@ -1,4 +1,4 @@
-import { Modal, Space, Typography } from 'antd'
+import { Button, Modal, Space, Typography } from 'antd'
 import type { DuplicateAction, FileInfo } from '@shared/types'
 
 interface Props {
@@ -22,23 +22,15 @@ export function DuplicateDialog({
       open={open}
       onCancel={onCancel}
       footer={[
-        <a key="skip" onClick={() => onChoose('skip')}>
+        <Button key="skip" onClick={() => onChoose('skip')}>
           跳过
-        </a>,
-        <a
-          key="overwrite"
-          onClick={() => onChoose('overwrite')}
-          style={{ marginLeft: 16 }}
-        >
+        </Button>,
+        <Button key="overwrite" danger onClick={() => onChoose('overwrite')}>
           覆盖
-        </a>,
-        <a
-          key="keep"
-          onClick={() => onChoose('keep-both')}
-          style={{ marginLeft: 16 }}
-        >
+        </Button>,
+        <Button key="keep" type="primary" onClick={() => onChoose('keep-both')}>
           保留两份
-        </a>
+        </Button>
       ]}
     >
       <Space direction="vertical">

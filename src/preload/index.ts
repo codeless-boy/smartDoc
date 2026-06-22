@@ -30,6 +30,10 @@ const api = {
     open: (id: string): Promise<void> => ipcRenderer.invoke(IPC.FileOpen, id),
     openLog: (id: string): Promise<void> =>
       ipcRenderer.invoke(IPC.FileOpenLog, id),
+    showInDir: (id: string): Promise<void> =>
+      ipcRenderer.invoke(IPC.FileShowInDir, id),
+    getAbsolutePath: (id: string): Promise<string | null> =>
+      ipcRenderer.invoke(IPC.FileGetAbsolutePath, id),
     update: (id: string, fields: { note?: string }): Promise<FileInfo | null> =>
       ipcRenderer.invoke(IPC.FileUpdate, id, fields),
     existsOnDisk: (id: string): Promise<boolean> =>

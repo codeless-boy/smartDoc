@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Divider, Space, Typography } from 'antd'
+import { Space, Typography, theme as antdTheme } from 'antd'
 import { useAppStore } from '@renderer/store/app-store'
 import { TagChip } from './TagChip'
 
@@ -31,6 +31,7 @@ const QUICK_PRESETS: Array<{
 ]
 
 export function SidePanel(): JSX.Element {
+  const { token } = antdTheme.useToken()
   const files = useAppStore((s) => s.files)
   const tags = useAppStore((s) => s.tags)
   const filter = useAppStore((s) => s.filter)
@@ -75,7 +76,13 @@ export function SidePanel(): JSX.Element {
         ))}
       </Space>
 
-      <Divider />
+      <div
+        style={{
+          height: 1,
+          background: token.colorBorderSecondary,
+          margin: '16px 0'
+        }}
+      />
       <Typography.Title level={5}>📑 类型</Typography.Title>
       <Space direction="vertical">
         {extCounts.map(([ext, count]) => (
@@ -92,7 +99,13 @@ export function SidePanel(): JSX.Element {
         ))}
       </Space>
 
-      <Divider />
+      <div
+        style={{
+          height: 1,
+          background: token.colorBorderSecondary,
+          margin: '16px 0'
+        }}
+      />
       <Typography.Title level={5}>🏷️ 标签</Typography.Title>
       <Space wrap>
         {tags.map((t) => (

@@ -7,6 +7,8 @@ export const IPC = {
   FileList: 'file:list',
   FileDelete: 'file:delete',
   FileOpen: 'file:open',
+  FileShowInDir: 'file:showInDir',
+  FileGetAbsolutePath: 'file:getAbsolutePath',
   FileUpdate: 'file:update',
   FileExistsOnDisk: 'file:existsOnDisk',
   DialogPickFiles: 'dialog:pickFiles',
