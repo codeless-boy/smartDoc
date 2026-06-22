@@ -1,4 +1,4 @@
-import { app, BrowserWindow } from 'electron'
+import { app, BrowserWindow, Menu } from 'electron'
 import path from 'node:path'
 import fs from 'node:fs'
 import { initLogger, logger } from '@main/logger'
@@ -83,6 +83,20 @@ function createWindow(): void {
     })
   })
 
+  // dev 模式保留 DevTools 快捷键（F12 / Ctrl+Shift+I）。
+  // 生产构建不注册，避免用户误开。
+  if (!app.isPackaged) {
+    mainWindow.webContents.on('before-input-event', (event, input) => {
+      const isF12 = input.key === 'F12'
+      const isCtrlShiftI =
+        input.control && input.shift && input.key.toLowerCase() === 'i'
+      if (isF12 || isCtrlShiftI) {
+        mainWindow?.webContents.toggleDevTools()
+        event.preventDefault()
+      }
+    })
+  }
+
   if (process.env['ELECTRON_RENDERER_URL']) {
     void mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
   } else {
@@ -96,6 +110,7 @@ if (process.env['SMARTDOC_USER_DATA']) {
 
 app.whenReady().then(async () => {
   try {
+    Menu.setApplicationMenu(null) // 去掉默认 File/Edit/View 菜单条
     await bootstrap()
     createWindow()
     if (updater) updater.init(() => mainWindow)
