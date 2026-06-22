@@ -15,6 +15,16 @@ import { UpdateNotifier } from './UpdateNotifier'
 import { ImportProgress } from './ImportProgress'
 import { FileContextMenu } from './FileContextMenu'
 
+/**
+ * 窗口宽度 < 640px 时隐藏 TopBar 的 Ctrl+F 快捷键提示（节省空间）。
+ * 该提示面向首次使用场景，窄屏用户通过键盘盲操作或肉眼可见的搜索框 placeholder 即可发现。
+ */
+const globalStyles = `
+@media (max-width: 640px) {
+  .topbar-kbd-hint { display: none !important; }
+}
+`
+
 export function AppShell(): JSX.Element {
   useFiles()
   const [repoReady, setRepoReady] = useState<boolean | null>(null)
@@ -50,14 +60,25 @@ export function AppShell(): JSX.Element {
 
   return (
     <Layout style={{ height: '100vh' }}>
+      <style>{globalStyles}</style>
       <Layout.Header
         style={{
           padding: 0,
           borderBottom: '1px solid #e8e8e8',
-          height: 48,
-          lineHeight: '48px'
+          height: 56,
+          lineHeight: '56px',
+          display: 'flex',
+          alignItems: 'center'
         }}
       >
+        {/** 左侧 220px 留空（对齐 Sider 头部），TopBar 仅占右侧 Content 区域 */}
+        <div
+          style={{
+            width: 220,
+            flexShrink: 0,
+            borderRight: '1px solid #f0f0f0'
+          }}
+        />
         <TopBar pickAndImport={pickAndImport} />
       </Layout.Header>
       <Layout>
