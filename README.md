@@ -93,8 +93,22 @@ git push origin main --tags
 
 > CI 环境网络通畅，`scripts/package.mjs` 注入的 npmmirror 镜像与 winCodeSign 预解压在 CI 上是冗余但无害的（确保本地与 CI 行为一致）。
 
+## 键盘快捷键
+
+| 按键 | 行为 |
+|------|------|
+| `Ctrl+F` / `/` | 聚焦搜索框 |
+| `Esc` | 关抽屉 → 清搜索 → 重置筛选（三级回退） |
+| `Ctrl+I` | 触发导入流程 |
+| `Delete` | 删除当前选中文件（带确认） |
+| `Enter` | 打开当前选中文件 |
+| `↑` / `↓` | 在列表上下移动选中行 |
+
+输入框内除 `Esc` 外不触发全局快捷键。
+
 ## 当前进度
 
 - [x] Part 1：脚手架、主进程基础设施、最小占位 UI
 - [x] Part 2：完整 UI（antd 布局、标签、搜索、详情抽屉、Playwright E2E）
 - [x] Part 3：electron-builder 打包 + electron-updater 自动更新
+- [x] 0.2.0：UI/UX 打磨（中性主题 + 空状态/快捷键/右键菜单 + 移除默认菜单条）
