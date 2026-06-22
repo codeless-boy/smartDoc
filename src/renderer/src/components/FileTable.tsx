@@ -63,13 +63,9 @@ export function FileTable(): JSX.Element {
       dataSource={files}
       loading={loading}
       pagination={false}
-      size="middle"
+      size="small"
       data-testid="file-table"
-      rowClassName={(r, idx) =>
-        `${r.id === selectedId ? 'row-selected' : ''} ${
-          idx % 2 === 0 ? 'row-even' : 'row-odd'
-        }`
-      }
+      rowClassName={(r) => (r.id === selectedId ? 'row-selected' : '')}
       onRow={(record) => ({
         onClick: () => select(record.id),
         onDoubleClick: async () => {
