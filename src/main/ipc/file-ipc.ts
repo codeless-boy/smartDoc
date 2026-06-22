@@ -49,6 +49,23 @@ export function registerFileIpc(
 
   ipcMain.handle(IPC.FileOpenLog, (_e, id: string): void => svc.logOpen(id))
 
+  ipcMain.handle(IPC.FileShowInDir, async (_e, id: string): Promise<void> => {
+    const file = svc.list({ filter: {} }).find((f) => f.id === id)
+    const root = repoRoot()
+    if (!file || !root) return
+    shell.showItemInFolder(path.join(root, file.storagePath))
+  })
+
+  ipcMain.handle(
+    IPC.FileGetAbsolutePath,
+    async (_e, id: string): Promise<string | null> => {
+      const file = svc.list({ filter: {} }).find((f) => f.id === id)
+      const root = repoRoot()
+      if (!file || !root) return null
+      return path.join(root, file.storagePath)
+    }
+  )
+
   ipcMain.handle(
     IPC.FileUpdate,
     (_e, id: string, fields: { note?: string }) => {
