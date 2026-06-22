@@ -7,7 +7,8 @@ import {
   Select,
   Space,
   Typography,
-  message
+  message,
+  theme as antdTheme
 } from 'antd'
 import { FileOutlined, DeleteOutlined } from '@ant-design/icons'
 import type { FileWithTags, TagInfo } from '@shared/types'
@@ -16,6 +17,7 @@ import { refreshAll } from '@renderer/api/use-files'
 import { TagChip } from './TagChip'
 
 export function FileDrawer(): JSX.Element {
+  const { token } = antdTheme.useToken()
   const selectedId = useAppStore((s) => s.selectedId)
   const select = useAppStore((s) => s.select)
   const files = useAppStore((s) => s.files)
@@ -60,7 +62,7 @@ export function FileDrawer(): JSX.Element {
       title={file.name}
       data-testid="file-drawer"
     >
-      <Space direction="vertical" style={{ width: '100%' }}>
+      <Space direction="vertical" size={20} style={{ width: '100%' }}>
         <Typography.Title level={5}>标签</Typography.Title>
         <Space wrap>
           {pendingTagIds.map((tid) => {
@@ -101,7 +103,11 @@ export function FileDrawer(): JSX.Element {
         />
 
         <Typography.Title level={5}>文件信息</Typography.Title>
-        <Descriptions column={1} size="small">
+        <Descriptions
+          column={1}
+          size="small"
+          labelStyle={{ color: token.colorTextTertiary, fontSize: 12 }}
+        >
           <Descriptions.Item label="大小">{file.size} B</Descriptions.Item>
           <Descriptions.Item label="导入时间">
             {file.importedAt}
@@ -111,6 +117,7 @@ export function FileDrawer(): JSX.Element {
 
         <Space>
           <Button
+            type="primary"
             icon={<FileOutlined />}
             onClick={() => window.api.file.open(file.id)}
           >
