@@ -41,7 +41,7 @@ test.describe('import', () => {
     await page.getByRole('button', { name: '导入文件' }).click()
     await expect(page.getByText('文件已存在')).toBeVisible()
 
-    await page.getByText('保留两份').click()
+    await page.getByRole('button', { name: '保留两份' }).click()
     await expect(
       page.getByTestId('file-table').getByText('dup (2).pdf')
     ).toBeVisible()
