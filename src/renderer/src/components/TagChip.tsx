@@ -1,4 +1,4 @@
-import { Tag } from 'antd'
+import { Tag, theme as antdTheme } from 'antd'
 import type { TagInfo } from '@shared/types'
 
 interface Props {
@@ -16,6 +16,7 @@ export function TagChip({
   onClick,
   selected
 }: Props): JSX.Element {
+  const { token } = antdTheme.useToken()
   return (
     <Tag
       color={tag.color}
@@ -27,7 +28,7 @@ export function TagChip({
       onClick={onClick}
       style={{
         cursor: onClick ? 'pointer' : undefined,
-        border: selected ? '2px solid #000' : undefined
+        border: selected ? `1px solid ${token.colorPrimary}` : undefined
       }}
     >
       {tag.name}
