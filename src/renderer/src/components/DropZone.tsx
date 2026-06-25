@@ -70,17 +70,28 @@ export function DropZone({ onDuplicate }: Props): JSX.Element | null {
       style={{
         position: 'fixed',
         inset: 0,
-        background: 'rgba(31, 31, 31, 0.08)',
-        border: '4px dashed #1f1f1f',
+        background: 'rgba(31, 31, 31, 0.06)',
+        border: '3px dashed #1f1f1f',
         zIndex: 1000,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        fontSize: 24,
         pointerEvents: 'none'
       }}
     >
-      松开以导入
+      <div
+        style={{
+          background: 'rgba(255, 255, 255, 0.9)',
+          padding: '16px 28px',
+          borderRadius: 8,
+          fontSize: 18,
+          fontWeight: 500,
+          color: '#1f1f1f',
+          boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+        }}
+      >
+        松开以导入
+      </div>
     </div>
   )
 }

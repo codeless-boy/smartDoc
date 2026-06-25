@@ -57,14 +57,20 @@ export function FileTable({ pickAndImport }: Props): JSX.Element {
     {
       title: '大小',
       key: 'size',
-      width: 100,
-      render: (_v, r) => formatSize(r.size)
+      width: 90,
+      align: 'right',
+      render: (_v, r) => (
+        <span className="col-secondary">{formatSize(r.size)}</span>
+      )
     },
     {
       title: '导入时间',
       key: 'importedAt',
-      width: 120,
-      render: (_v, r) => formatDate(r.importedAt)
+      width: 110,
+      align: 'right',
+      render: (_v, r) => (
+        <span className="col-secondary">{formatDate(r.importedAt)}</span>
+      )
     }
   ]
 

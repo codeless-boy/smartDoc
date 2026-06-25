@@ -16,6 +16,14 @@ import { useAppStore } from '@renderer/store/app-store'
 import { refreshAll } from '@renderer/api/use-files'
 import { TagChip } from './TagChip'
 
+function formatSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+  if (bytes < 1024 * 1024 * 1024)
+    return `${(bytes / 1024 / 1024).toFixed(1)} MB`
+  return `${(bytes / 1024 / 1024 / 1024).toFixed(2)} GB`
+}
+
 export function FileDrawer(): JSX.Element {
   const { token } = antdTheme.useToken()
   const selectedId = useAppStore((s) => s.selectedId)
@@ -62,60 +70,104 @@ export function FileDrawer(): JSX.Element {
       title={file.name}
       data-testid="file-drawer"
     >
-      <Space direction="vertical" size={20} style={{ width: '100%' }}>
-        <Typography.Title level={5}>标签</Typography.Title>
-        <Space wrap>
-          {pendingTagIds.map((tid) => {
-            const t = tags.find((x) => x.id === tid)
-            return t ? (
-              <TagChip
-                key={tid}
-                tag={t}
-                closable
-                onClose={() =>
-                  commitTags(pendingTagIds.filter((x) => x !== tid))
-                }
-              />
-            ) : null
-          })}
-        </Space>
-        <Select
-          mode="tags"
-          style={{ width: '100%' }}
-          placeholder="添加标签（回车提交）"
-          value={[]}
-          onSelect={(value: string) => {
-            const known = tags.find((t) => t.name === value)
-            if (known) commitTags([...pendingTagIds, known.id])
-            else void createAndApplyTag(value)
-          }}
-          options={tags
-            .filter((t) => !pendingTagIds.includes(t.id))
-            .map((t) => ({ label: t.name, value: t.name }))}
-        />
+      <Space direction="vertical" size={24} style={{ width: '100%' }}>
+        <div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: token.colorTextTertiary,
+              marginBottom: 8
+            }}
+          >
+            标签
+          </div>
+          <Space wrap style={{ marginBottom: 8 }}>
+            {pendingTagIds.map((tid) => {
+              const t = tags.find((x) => x.id === tid)
+              return t ? (
+                <TagChip
+                  key={tid}
+                  tag={t}
+                  closable
+                  onClose={() =>
+                    commitTags(pendingTagIds.filter((x) => x !== tid))
+                  }
+                />
+              ) : null
+            })}
+          </Space>
+          <Select
+            mode="tags"
+            style={{ width: '100%' }}
+            placeholder="添加标签（回车提交）"
+            value={[]}
+            onSelect={(value: string) => {
+              const known = tags.find((t) => t.name === value)
+              if (known) commitTags([...pendingTagIds, known.id])
+              else void createAndApplyTag(value)
+            }}
+            options={tags
+              .filter((t) => !pendingTagIds.includes(t.id))
+              .map((t) => ({ label: t.name, value: t.name }))}
+          />
+        </div>
 
-        <Typography.Title level={5}>备注</Typography.Title>
-        <Input.TextArea
-          rows={4}
-          value={note}
-          onChange={(e) => setNote(e.target.value)}
-          onBlur={commitNote}
-        />
+        <div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: token.colorTextTertiary,
+              marginBottom: 8
+            }}
+          >
+            备注
+          </div>
+          <Input.TextArea
+            rows={4}
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+            onBlur={commitNote}
+            placeholder="添加备注…"
+          />
+        </div>
 
-        <Typography.Title level={5}>文件信息</Typography.Title>
-        <Descriptions
-          column={1}
-          size="small"
-          labelStyle={{ color: token.colorTextTertiary, fontSize: 12 }}
-        >
-          <Descriptions.Item label="大小">{file.size} B</Descriptions.Item>
-          <Descriptions.Item label="导入时间">
-            {file.importedAt}
-          </Descriptions.Item>
-          <Descriptions.Item label="路径">{file.storagePath}</Descriptions.Item>
-        </Descriptions>
+        <div>
+          <div
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              color: token.colorTextTertiary,
+              marginBottom: 8
+            }}
+          >
+            文件信息
+          </div>
+          <Descriptions
+            column={1}
+            size="small"
+            labelStyle={{ color: token.colorTextTertiary, fontSize: 12 }}
+          >
+            <Descriptions.Item label="大小">
+              {formatSize(file.size)}
+            </Descriptions.Item>
+            <Descriptions.Item label="导入时间">
+              {file.importedAt}
+            </Descriptions.Item>
+            <Descriptions.Item label="路径">
+              {file.storagePath}
+            </Descriptions.Item>
+          </Descriptions>
+        </div>
 
-        <Space>
+        <Space size={8}>
           <Button
             type="primary"
             icon={<FileOutlined />}

@@ -33,23 +33,17 @@ export function EmptyState({ state, onImport }: Props): JSX.Element {
           alignItems: 'center',
           justifyContent: 'center',
           minHeight: 400,
-          gap: 16
+          gap: 12
         }}
       >
-        <Empty
-          image={Empty.PRESENTED_IMAGE_SIMPLE}
-          description={
-            <div>
-              <Typography.Title level={5} style={{ marginBottom: 4 }}>
-                还没有文件
-              </Typography.Title>
-              <Typography.Text type="secondary">
-                把文件拖进来，或点下方按钮选择
-              </Typography.Text>
-            </div>
-          }
-        />
-        <Button type="primary" onClick={onImport}>
+        <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={null} />
+        <Typography.Title level={4} style={{ marginTop: 8, marginBottom: 0 }}>
+          还没有文件
+        </Typography.Title>
+        <Typography.Text type="secondary">
+          把文件拖进来，或点下方按钮选择
+        </Typography.Text>
+        <Button type="primary" onClick={onImport} style={{ marginTop: 8 }}>
           导入第一个文件
         </Button>
       </div>
@@ -69,19 +63,13 @@ export function EmptyState({ state, onImport }: Props): JSX.Element {
         gap: 12
       }}
     >
-      <Empty
-        image={Empty.PRESENTED_IMAGE_SIMPLE}
-        description={
-          <div>
-            <Typography.Title level={5} style={{ marginBottom: 4 }}>
-              没有匹配的文件
-            </Typography.Title>
-            <Typography.Text type="secondary">
-              当前筛选：{state.activeFilters.join('，')}
-            </Typography.Text>
-          </div>
-        }
-      />
+      <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description={null} />
+      <Typography.Title level={4} style={{ marginTop: 8, marginBottom: 0 }}>
+        没有匹配的文件
+      </Typography.Title>
+      <Typography.Text type="secondary">
+        当前筛选：{state.activeFilters.join('，')}
+      </Typography.Text>
       <Button type="link" onClick={() => useAppStore.getState().resetFilter()}>
         清除筛选
       </Button>

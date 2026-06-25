@@ -1,5 +1,6 @@
 import { Button, Modal, Space, Typography } from 'antd'
 import type { DuplicateAction, FileInfo } from '@shared/types'
+import { FileOutlined } from '@ant-design/icons'
 
 interface Props {
   open: boolean
@@ -33,12 +34,26 @@ export function DuplicateDialog({
         </Button>
       ]}
     >
-      <Space direction="vertical">
-        <Typography.Text>
-          仓库中已有同名文件{' '}
-          <Typography.Text strong>{existing.name}</Typography.Text>。
+      <Space direction="vertical" size={12}>
+        <Space align="center" size={8}>
+          <FileOutlined style={{ fontSize: 20, color: '#8c8c8c' }} />
+          <Typography.Text strong style={{ fontSize: 15 }}>
+            {existing.name}
+          </Typography.Text>
+        </Space>
+        <Typography.Text type="secondary" style={{ fontSize: 13 }}>
+          仓库中已有同名文件。选择如何处理：
         </Typography.Text>
-        <Typography.Text type="secondary">源：{sourcePath}</Typography.Text>
+        <Typography.Text
+          type="secondary"
+          style={{
+            fontSize: 12,
+            fontFamily: 'ui-monospace, SFMono-Regular, Menlo, monospace',
+            wordBreak: 'break-all'
+          }}
+        >
+          源：{sourcePath}
+        </Typography.Text>
       </Space>
     </Modal>
   )

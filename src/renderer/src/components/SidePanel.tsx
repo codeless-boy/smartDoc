@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Space, Typography, theme as antdTheme } from 'antd'
+import { Space, theme as antdTheme } from 'antd'
 import { useAppStore } from '@renderer/store/app-store'
 import { TagChip } from './TagChip'
 
@@ -29,6 +29,70 @@ const QUICK_PRESETS: Array<{
     active: (f) => !!f.topOpenedLimit
   }
 ]
+
+function SectionLabel({
+  children
+}: {
+  children: React.ReactNode
+}): JSX.Element {
+  const { token } = antdTheme.useToken()
+  return (
+    <div
+      style={{
+        fontSize: 11,
+        fontWeight: 600,
+        textTransform: 'uppercase',
+        letterSpacing: '0.05em',
+        color: token.colorTextTertiary,
+        marginBottom: 8
+      }}
+    >
+      {children}
+    </div>
+  )
+}
+
+function FilterItem({
+  label,
+  active,
+  onClick,
+  testid
+}: {
+  label: string
+  active: boolean
+  onClick: () => void
+  testid?: string
+}): JSX.Element {
+  const { token } = antdTheme.useToken()
+  return (
+    <a
+      data-testid={testid}
+      onClick={onClick}
+      style={{
+        display: 'block',
+        padding: '4px 8px',
+        margin: '0 -8px',
+        borderRadius: 4,
+        fontSize: 13,
+        fontWeight: active ? 600 : 400,
+        color: active ? token.colorPrimary : token.colorText,
+        background: active ? token.colorBgLayout : 'transparent',
+        cursor: 'pointer',
+        transition: 'background 0.15s'
+      }}
+      onMouseEnter={(e) => {
+        if (!active)
+          (e.currentTarget as HTMLElement).style.background =
+            token.colorBgLayout
+      }}
+      onMouseLeave={(e) => {
+        if (!active) (e.currentTarget as HTMLElement).style.background = ''
+      }}
+    >
+      {label}
+    </a>
+  )
+}
 
 export function SidePanel(): JSX.Element {
   const { token } = antdTheme.useToken()
@@ -62,17 +126,16 @@ export function SidePanel(): JSX.Element {
 
   return (
     <div style={{ padding: 12 }}>
-      <Typography.Title level={5}>⚡ 快捷筛选</Typography.Title>
-      <Space direction="vertical">
+      <SectionLabel>快捷筛选</SectionLabel>
+      <Space direction="vertical" size={2} style={{ width: '100%' }}>
         {QUICK_PRESETS.map((p) => (
-          <a
+          <FilterItem
             key={p.key}
-            data-testid={`quick-${p.key}`}
+            label={p.label}
+            active={p.active(filter)}
             onClick={p.apply}
-            style={{ fontWeight: p.active(filter) ? 600 : 400 }}
-          >
-            {p.label}
-          </a>
+            testid={`quick-${p.key}`}
+          />
         ))}
       </Space>
 
@@ -83,19 +146,16 @@ export function SidePanel(): JSX.Element {
           margin: '16px 0'
         }}
       />
-      <Typography.Title level={5}>📑 类型</Typography.Title>
-      <Space direction="vertical">
+      <SectionLabel>类型</SectionLabel>
+      <Space direction="vertical" size={2} style={{ width: '100%' }}>
         {extCounts.map(([ext, count]) => (
-          <a
+          <FilterItem
             key={ext}
-            data-testid={`ext-${ext}`}
+            label={`.${ext} (${count})`}
+            active={!!filter.exts?.includes(ext)}
             onClick={() => toggleExt(ext)}
-            style={{
-              fontWeight: filter.exts?.includes(ext) ? 600 : 400
-            }}
-          >
-            .{ext} ({count})
-          </a>
+            testid={`ext-${ext}`}
+          />
         ))}
       </Space>
 
@@ -106,7 +166,7 @@ export function SidePanel(): JSX.Element {
           margin: '16px 0'
         }}
       />
-      <Typography.Title level={5}>🏷️ 标签</Typography.Title>
+      <SectionLabel>标签</SectionLabel>
       <Space wrap>
         {tags.map((t) => (
           <TagChip
